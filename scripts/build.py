@@ -4,10 +4,14 @@
 Reads nodes.json, downloads each node's latest conformance report and bundles
 everything into _site/data.json, next to the page's static files.
 
+A node's report is either a URL, or a lookup of the newest matching file among
+a GitHub repository's releases (see latest_release_asset).
+
 A report that cannot be fetched or parsed does not fail the build: the node is
 kept with an error message so the page can show that its report is missing.
 """
 
+import fnmatch
 import json
 import re
 import shutil
@@ -32,6 +36,26 @@ def download(url):
         return response.read()
 
 
+def latest_release_asset(lookup):
+    """Return the download URL of the newest release file matching a pattern.
+
+    `lookup` is {"github_releases": "<owner>/<repository>", "asset": "<glob>"}.
+    Files are ordered by the YYYYMMDD date in their name, for reports published
+    under a versioned name that no stable "latest" URL can point to.
+    """
+    repository, pattern = lookup["github_releases"], lookup["asset"]
+    releases = json.loads(download(f"https://api.github.com/repos/{repository}/releases?per_page=100"))
+    dated = []
+    for release in releases:
+        for asset in release["assets"]:
+            date = re.search(r"(?<!\d)\d{8}(?!\d)", asset["name"])
+            if fnmatch.fnmatchcase(asset["name"], pattern) and date:
+                dated.append((date.group(), asset["browser_download_url"]))
+    if not dated:
+        raise ValueError(f"no dated release file matching {pattern} in {repository}")
+    return max(dated)[1]
+
+
 def parse_report(payload):
     report = json.loads(payload)
     missing = [k for k in ("corpus", "totals", "rules") if k not in report]
@@ -45,12 +69,15 @@ def fetch_node(node):
         "name": node["name"],
         "language": node.get("language"),
         "repository": node.get("repository"),
-        "report_url": node["report"],
+        "color": node.get("color"),
+        "report_url": None,
         "report": None,
         "error": None,
     }
     try:
-        entry["report"] = parse_report(download(node["report"]))
+        source = node["report"]
+        entry["report_url"] = source if isinstance(source, str) else latest_release_asset(source)
+        entry["report"] = parse_report(download(entry["report_url"]))
         print(f"ok     {node['name']}")
     except Exception as error:
         entry["error"] = str(error)

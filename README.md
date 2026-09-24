@@ -18,7 +18,19 @@ Add an entry to `nodes.json`:
 }
 ```
 
+`color` is optional; nodes without one get a color from a default palette.
+
 `report` must be a public, stable URL that always serves the node's latest report as JSON.
+
+When a node publishes its report as a GitHub release file with a versioned name, `report` can instead look up the
+newest one. The build picks the matching file with the latest `YYYYMMDD` date in its name:
+
+```json
+"report": {
+  "github_releases": "pragma-org/amaru",
+  "asset": "amaru-*-cbor-conformance.json"
+}
+```
 
 ## Building
 
