@@ -285,7 +285,7 @@ async function main() {
     const response = await fetch('data.json', { cache: 'no-store' });
     if (!response.ok) throw new Error(`data.json: HTTP ${response.status}`);
     const data = await response.json();
-    state.nodes = data.nodes.map((n, i) => ({ ...n, color: COLORS[i % COLORS.length] }));
+    state.nodes = data.nodes.map((n, i) => ({ ...n, color: n.color || COLORS[i % COLORS.length] }));
     renderSubtitle(data.built_at);
     renderWarnings();
     renderCards();
