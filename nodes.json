@@ -1,0 +1,16 @@
+{
+  "nodes": [
+    {
+      "name": "Amaru",
+      "language": "Rust",
+      "repository": "https://github.com/pragma-org/amaru",
+      "report": "https://raw.githubusercontent.com/etorreborre/cardano-cbor-dataset/etorreborre/feat/normalization/dataset/reports/conway-123-100/latest.json"
+    },
+    {
+      "name": "Haskell node",
+      "language": "Haskell",
+      "repository": "https://github.com/IntersectMBO/cardano-node",
+      "report": "https://raw.githubusercontent.com/etorreborre/cardano-cbor-dataset/etorreborre/feat/normalization/dataset/reports/conway-123-100/latest.json"
+    }
+  ]
+}
