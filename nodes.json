@@ -11,6 +11,15 @@
       }
     },
     {
+      "name": "Dingo",
+      "language": "Go",
+      "repository": "https://github.com/blinklabs-io/dingo",
+      "report": {
+        "github_releases": "blinklabs-io/dingo",
+        "asset": "dingo-*-cbor-conformance.json"
+      }
+    },
+    {
       "name": "Haskell node",
       "language": "Haskell",
       "repository": "https://github.com/IntersectMBO/cardano-node",
