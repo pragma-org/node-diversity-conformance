@@ -9,20 +9,24 @@ assembled into an independent directory under ``_site/scenarios``.
 
 import argparse
 import fnmatch
+import gzip
 import html
 import json
 import re
 import shutil
+import subprocess
 import sys
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "_site"
 TIMEOUT_SECONDS = 60
 TURBO_DEVIATION_LIMIT = 1.5
 TURBO_ORDERS = ("cpu", "memory", "cpu-deviation", "memory-deviation")
+COMPRESSION_SUFFIXES = (".zst", ".gzip", ".gz")
 
 
 def slug(name):
@@ -116,10 +120,62 @@ def load_nodes():
     return nodes
 
 
+def compression_suffix(name):
+    """Return the compression suffix carried by a URL or asset name."""
+    name = name.lower()
+    return next((suffix for suffix in COMPRESSION_SUFFIXES if name.endswith(suffix)), None)
+
+
+def uncompressed_asset_name(name):
+    suffix = compression_suffix(name)
+    return name[: -len(suffix)] if suffix else name
+
+
+def decompress_zstd(payload):
+    try:
+        from compression import zstd
+    except ImportError:
+        try:
+            result = subprocess.run(
+                ["zstd", "-d", "-c"],
+                input=payload,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=True,
+            )
+        except FileNotFoundError as error:
+            raise RuntimeError(".zst reports require Python 3.14+ or the zstd command") from error
+        except subprocess.CalledProcessError as error:
+            message = error.stderr.decode(errors="replace").strip()
+            raise RuntimeError(f"unable to decompress .zst report: {message}") from error
+        return result.stdout
+    return zstd.decompress(payload)
+
+
+def decompress_download(urls, payload):
+    """Decompress a report using its filename while leaving JSON untouched."""
+    suffix = next(
+        (
+            suffix
+            for url in urls
+            if url
+            for suffix in (compression_suffix(urlsplit(url).path),)
+            if suffix
+        ),
+        None,
+    )
+    if suffix == ".gzip" or suffix == ".gz":
+        return gzip.decompress(payload)
+    if suffix == ".zst":
+        return decompress_zstd(payload)
+    return payload
+
+
 def download(url):
     request = urllib.request.Request(url, headers={"User-Agent": "node-diversity-conformance"})
     with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
-        return response.read()
+        payload = response.read()
+        return decompress_download((response.geturl(), url), payload)
 
 
 def latest_release_asset(lookup):
@@ -130,7 +186,10 @@ def latest_release_asset(lookup):
     for release in releases:
         for asset in release["assets"]:
             date = re.search(r"(?<!\d)\d{8}(?!\d)", asset["name"])
-            if fnmatch.fnmatchcase(asset["name"], pattern) and date:
+            matches = fnmatch.fnmatchcase(asset["name"], pattern) or fnmatch.fnmatchcase(
+                uncompressed_asset_name(asset["name"]), pattern
+            )
+            if matches and date:
                 dated.append((date.group(), asset["browser_download_url"]))
     if not dated:
         raise ValueError(f"no dated release file matching {pattern} in {repository}")

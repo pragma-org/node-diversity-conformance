@@ -58,13 +58,16 @@ To participate, add a directory under `nodes/` with `metadata.json`,
 #### Direct link
 
 Reports can be provided as a direct download URL, which must be public and
-stable, and must serve the latest JSON document for that scenario.
+stable, and must serve the latest JSON document for that scenario. The report
+may be compressed with `.gzip`, `.gz`, or `.zst`; the builder detects the
+suffix and decompresses it before validating the JSON.
 
 #### Github release
 
 Alternatively, node can publish their report as GitHub release files with a
 versioned name. The build picks the matching file with the latest `YYYYMMDD`
-date in its name:
+date in its name. Compression suffixes are optional in the asset glob, so the
+same pattern matches both the JSON and its compressed form:
 
 ```json
 "reports": {
@@ -84,8 +87,10 @@ python3 scripts/build.py
 python3 -m http.server -d _site
 ```
 
-The build needs Python 3 only. It writes the site to `_site/`. A report that cannot be downloaded does not fail the
-build; the relevant scenario shows the node as unavailable instead. The generated layout is:
+The build needs Python 3. For `.zst` reports, Python 3.14 or the `zstd`
+command is also required. It writes the site to `_site/`. A report that cannot
+be downloaded does not fail the build; the relevant scenario shows the node as
+unavailable instead. The generated layout is:
 
 ```
 _site/
