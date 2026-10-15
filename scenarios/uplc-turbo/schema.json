@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://node-diversity-conformance.pragma.io/scenarios/uplc-turbo/schema.json",
+  "title": "UPLC turbo benchmark scenario report",
+  "type": "object",
+  "required": ["schema_version", "scenario", "generated_at", "corpus", "protocol_version", "setup", "summary", "benchmarks", "representatives", "worst_cases"],
+  "properties": {
+    "schema_version": { "const": "1" },
+    "scenario": { "const": "uplc-turbo" },
+    "generated_at": {
+      "oneOf": [
+        { "type": "string", "format": "date-time" },
+        { "type": "integer", "minimum": 0 }
+      ]
+    },
+    "implementation": { "type": "object" },
+    "corpus": { "type": "string" },
+    "protocol_version": { "type": ["string", "number"] },
+    "setup": {
+      "type": "object",
+      "required": ["sample_count", "measurement", "includes_reset", "cost_model"],
+      "properties": {
+        "sample_count": { "type": "integer", "minimum": 1 },
+        "measurement": { "type": "string" },
+        "includes_reset": { "type": "boolean" },
+        "cost_model": { "type": "string" },
+        "corpus_digest": { "type": "string" },
+        "deviation_tolerance": { "type": "number", "minimum": 0 },
+        "deviation_units": { "type": "string" },
+        "memory_measurement": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["group", "scripts", "samples", "passed", "failed", "cpu_mean_ns", "cpu_max_ns", "mem_mean_bytes", "mem_max_bytes"],
+        "properties": {
+          "group": { "type": "string", "enum": ["V1", "V2", "V3"] },
+          "scripts": { "type": "integer", "minimum": 1 },
+          "samples": { "type": "integer", "minimum": 1 },
+          "passed": { "type": "integer", "minimum": 0 },
+          "failed": { "type": "integer", "minimum": 0 },
+          "cpu_mean_ns": { "type": "number", "minimum": 0 },
+          "cpu_max_ns": { "type": "number", "minimum": 0 },
+          "mem_mean_bytes": { "type": "number", "minimum": 0 },
+          "mem_max_bytes": { "type": "number", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/benchmark" }
+    },
+    "representatives": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/benchmark" }
+    },
+    "worst_cases": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/benchmark" }
+    }
+  },
+  "$defs": {
+    "benchmark": {
+      "type": "object",
+      "required": ["bench", "plutus_version", "budget_cpu", "budget_mem", "group", "cpu_max_ns", "cpu_mean_ns", "mem_mean_bytes", "mem_max_bytes", "size_bytes"],
+      "properties": {
+        "bench": { "type": "string" },
+        "plutus_version": { "type": "string", "enum": ["V1", "V2", "V3"] },
+        "budget_cpu": { "type": ["integer", "null"], "minimum": 0 },
+        "budget_mem": { "type": ["integer", "null"], "minimum": 0 },
+        "group": { "type": "string", "enum": ["V1", "V2", "V3"] },
+        "cpu_max_ns": { "type": "number", "minimum": 0 },
+        "cpu_mean_ns": { "type": "number", "minimum": 0 },
+        "mem_mean_bytes": { "type": ["number", "null"], "minimum": 0 },
+        "mem_max_bytes": { "type": ["number", "null"], "minimum": 0 },
+        "size_bytes": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

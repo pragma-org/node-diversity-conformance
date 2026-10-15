@@ -1,0 +1,26 @@
+{
+  "id": "amaru",
+  "name": "Amaru",
+  "language": "Rust",
+  "repository": "https://github.com/pragma-org/amaru",
+  "website": null,
+  "color": "#30dfa5",
+  "reports": {
+    "cbor-decoding": {
+      "github_releases": "pragma-org/amaru",
+      "asset": "amaru-*-cbor-conformance.json"
+    },
+    "ledger-rules": {
+      "github_releases": "pragma-org/amaru",
+      "asset": "amaru-*-ledger-rules.json"
+    },
+    "uplc-conformance": {
+      "github_releases": "pragma-org/amaru",
+      "asset": "amaru-*-uplc-conformance.json"
+    },
+    "uplc-turbo": {
+      "github_releases": "pragma-org/amaru",
+      "asset": "amaru-*-uplc-turbo.json"
+    }
+  }
+}

@@ -1,0 +1,1124 @@
+{
+  "schema_version": "1",
+  "scenario": "ledger-rules",
+  "generated_at": "2026-10-13T11:59:19+00:00",
+  "implementation": {
+    "name": "amaru"
+  },
+  "corpus": "amaru-ledger/tests/data/transaction/scenarios",
+  "totals": {
+    "passed": 277,
+    "failed": 0,
+    "total": 277
+  },
+  "scenarios": [
+    {
+      "id": "00001",
+      "result": "pass"
+    },
+    {
+      "id": "00002",
+      "result": "pass"
+    },
+    {
+      "id": "00003",
+      "result": "pass"
+    },
+    {
+      "id": "00004",
+      "result": "pass"
+    },
+    {
+      "id": "00005",
+      "result": "pass"
+    },
+    {
+      "id": "00006",
+      "result": "pass"
+    },
+    {
+      "id": "00007",
+      "result": "pass"
+    },
+    {
+      "id": "00008",
+      "result": "pass"
+    },
+    {
+      "id": "00009",
+      "result": "pass"
+    },
+    {
+      "id": "00010",
+      "result": "pass"
+    },
+    {
+      "id": "00011",
+      "result": "pass"
+    },
+    {
+      "id": "00012",
+      "result": "pass"
+    },
+    {
+      "id": "00013",
+      "result": "pass"
+    },
+    {
+      "id": "00014",
+      "result": "pass"
+    },
+    {
+      "id": "00015",
+      "result": "pass"
+    },
+    {
+      "id": "00016",
+      "result": "pass"
+    },
+    {
+      "id": "00017",
+      "result": "pass"
+    },
+    {
+      "id": "00018",
+      "result": "pass"
+    },
+    {
+      "id": "00019",
+      "result": "pass"
+    },
+    {
+      "id": "00020",
+      "result": "pass"
+    },
+    {
+      "id": "00021",
+      "result": "pass"
+    },
+    {
+      "id": "00022",
+      "result": "pass"
+    },
+    {
+      "id": "00023",
+      "result": "pass"
+    },
+    {
+      "id": "00024",
+      "result": "pass"
+    },
+    {
+      "id": "00025",
+      "result": "pass"
+    },
+    {
+      "id": "00026",
+      "result": "pass"
+    },
+    {
+      "id": "00027",
+      "result": "pass"
+    },
+    {
+      "id": "00028",
+      "result": "pass"
+    },
+    {
+      "id": "00029",
+      "result": "pass"
+    },
+    {
+      "id": "00030",
+      "result": "pass"
+    },
+    {
+      "id": "00031",
+      "result": "pass"
+    },
+    {
+      "id": "00032",
+      "result": "pass"
+    },
+    {
+      "id": "00033",
+      "result": "pass"
+    },
+    {
+      "id": "00034",
+      "result": "pass"
+    },
+    {
+      "id": "00035",
+      "result": "pass"
+    },
+    {
+      "id": "00036",
+      "result": "pass"
+    },
+    {
+      "id": "00037",
+      "result": "pass"
+    },
+    {
+      "id": "00038",
+      "result": "pass"
+    },
+    {
+      "id": "00039",
+      "result": "pass"
+    },
+    {
+      "id": "00040",
+      "result": "pass"
+    },
+    {
+      "id": "00041",
+      "result": "pass"
+    },
+    {
+      "id": "00042",
+      "result": "pass"
+    },
+    {
+      "id": "00043",
+      "result": "pass"
+    },
+    {
+      "id": "00044",
+      "result": "pass"
+    },
+    {
+      "id": "00045",
+      "result": "pass"
+    },
+    {
+      "id": "00046",
+      "result": "pass"
+    },
+    {
+      "id": "00047",
+      "result": "pass"
+    },
+    {
+      "id": "00048",
+      "result": "pass"
+    },
+    {
+      "id": "00049",
+      "result": "pass"
+    },
+    {
+      "id": "00050",
+      "result": "pass"
+    },
+    {
+      "id": "00051",
+      "result": "pass"
+    },
+    {
+      "id": "00052",
+      "result": "pass"
+    },
+    {
+      "id": "00053",
+      "result": "pass"
+    },
+    {
+      "id": "00054",
+      "result": "pass"
+    },
+    {
+      "id": "00055",
+      "result": "pass"
+    },
+    {
+      "id": "00056",
+      "result": "pass"
+    },
+    {
+      "id": "00057",
+      "result": "pass"
+    },
+    {
+      "id": "00058",
+      "result": "pass"
+    },
+    {
+      "id": "00059",
+      "result": "pass"
+    },
+    {
+      "id": "00060",
+      "result": "pass"
+    },
+    {
+      "id": "00061",
+      "result": "pass"
+    },
+    {
+      "id": "00062",
+      "result": "pass"
+    },
+    {
+      "id": "00063",
+      "result": "pass"
+    },
+    {
+      "id": "00064",
+      "result": "pass"
+    },
+    {
+      "id": "00065",
+      "result": "pass"
+    },
+    {
+      "id": "00066",
+      "result": "pass"
+    },
+    {
+      "id": "00067",
+      "result": "pass"
+    },
+    {
+      "id": "00068",
+      "result": "pass"
+    },
+    {
+      "id": "00069",
+      "result": "pass"
+    },
+    {
+      "id": "00070",
+      "result": "pass"
+    },
+    {
+      "id": "00071",
+      "result": "pass"
+    },
+    {
+      "id": "00072",
+      "result": "pass"
+    },
+    {
+      "id": "00073",
+      "result": "pass"
+    },
+    {
+      "id": "00074",
+      "result": "pass"
+    },
+    {
+      "id": "00075",
+      "result": "pass"
+    },
+    {
+      "id": "00076",
+      "result": "pass"
+    },
+    {
+      "id": "00077",
+      "result": "pass"
+    },
+    {
+      "id": "00078",
+      "result": "pass"
+    },
+    {
+      "id": "00079",
+      "result": "pass"
+    },
+    {
+      "id": "00080",
+      "result": "pass"
+    },
+    {
+      "id": "00081",
+      "result": "pass"
+    },
+    {
+      "id": "00082",
+      "result": "pass"
+    },
+    {
+      "id": "00083",
+      "result": "pass"
+    },
+    {
+      "id": "00084",
+      "result": "pass"
+    },
+    {
+      "id": "00085",
+      "result": "pass"
+    },
+    {
+      "id": "00086",
+      "result": "pass"
+    },
+    {
+      "id": "00087",
+      "result": "pass"
+    },
+    {
+      "id": "00088",
+      "result": "pass"
+    },
+    {
+      "id": "00089",
+      "result": "pass"
+    },
+    {
+      "id": "00090",
+      "result": "pass"
+    },
+    {
+      "id": "00091",
+      "result": "pass"
+    },
+    {
+      "id": "00092",
+      "result": "pass"
+    },
+    {
+      "id": "00093",
+      "result": "pass"
+    },
+    {
+      "id": "00094",
+      "result": "pass"
+    },
+    {
+      "id": "00095",
+      "result": "pass"
+    },
+    {
+      "id": "00096",
+      "result": "pass"
+    },
+    {
+      "id": "00097",
+      "result": "pass"
+    },
+    {
+      "id": "00098",
+      "result": "pass"
+    },
+    {
+      "id": "00099",
+      "result": "pass"
+    },
+    {
+      "id": "00100",
+      "result": "pass"
+    },
+    {
+      "id": "00101",
+      "result": "pass"
+    },
+    {
+      "id": "00102",
+      "result": "pass"
+    },
+    {
+      "id": "00103",
+      "result": "pass"
+    },
+    {
+      "id": "00104",
+      "result": "pass"
+    },
+    {
+      "id": "00105",
+      "result": "pass"
+    },
+    {
+      "id": "00106",
+      "result": "pass"
+    },
+    {
+      "id": "00107",
+      "result": "pass"
+    },
+    {
+      "id": "00108",
+      "result": "pass"
+    },
+    {
+      "id": "00109",
+      "result": "pass"
+    },
+    {
+      "id": "00110",
+      "result": "pass"
+    },
+    {
+      "id": "00111",
+      "result": "pass"
+    },
+    {
+      "id": "00112",
+      "result": "pass"
+    },
+    {
+      "id": "00113",
+      "result": "pass"
+    },
+    {
+      "id": "00114",
+      "result": "pass"
+    },
+    {
+      "id": "00115",
+      "result": "pass"
+    },
+    {
+      "id": "00116",
+      "result": "pass"
+    },
+    {
+      "id": "00117",
+      "result": "pass"
+    },
+    {
+      "id": "00118",
+      "result": "pass"
+    },
+    {
+      "id": "00119",
+      "result": "pass"
+    },
+    {
+      "id": "00120",
+      "result": "pass"
+    },
+    {
+      "id": "00121",
+      "result": "pass"
+    },
+    {
+      "id": "00122",
+      "result": "pass"
+    },
+    {
+      "id": "00123",
+      "result": "pass"
+    },
+    {
+      "id": "00124",
+      "result": "pass"
+    },
+    {
+      "id": "00125",
+      "result": "pass"
+    },
+    {
+      "id": "00126",
+      "result": "pass"
+    },
+    {
+      "id": "00127",
+      "result": "pass"
+    },
+    {
+      "id": "00128",
+      "result": "pass"
+    },
+    {
+      "id": "00129",
+      "result": "pass"
+    },
+    {
+      "id": "00130",
+      "result": "pass"
+    },
+    {
+      "id": "00131",
+      "result": "pass"
+    },
+    {
+      "id": "00132",
+      "result": "pass"
+    },
+    {
+      "id": "00133",
+      "result": "pass"
+    },
+    {
+      "id": "00134",
+      "result": "pass"
+    },
+    {
+      "id": "00135",
+      "result": "pass"
+    },
+    {
+      "id": "00136",
+      "result": "pass"
+    },
+    {
+      "id": "00137",
+      "result": "pass"
+    },
+    {
+      "id": "00138",
+      "result": "pass"
+    },
+    {
+      "id": "00139",
+      "result": "pass"
+    },
+    {
+      "id": "00140",
+      "result": "pass"
+    },
+    {
+      "id": "00141",
+      "result": "pass"
+    },
+    {
+      "id": "00142",
+      "result": "pass"
+    },
+    {
+      "id": "00143",
+      "result": "pass"
+    },
+    {
+      "id": "00144",
+      "result": "pass"
+    },
+    {
+      "id": "00145",
+      "result": "pass"
+    },
+    {
+      "id": "00146",
+      "result": "pass"
+    },
+    {
+      "id": "00147",
+      "result": "pass"
+    },
+    {
+      "id": "00148",
+      "result": "pass"
+    },
+    {
+      "id": "00149",
+      "result": "pass"
+    },
+    {
+      "id": "00150",
+      "result": "pass"
+    },
+    {
+      "id": "00151",
+      "result": "pass"
+    },
+    {
+      "id": "00152",
+      "result": "pass"
+    },
+    {
+      "id": "00153",
+      "result": "pass"
+    },
+    {
+      "id": "00154",
+      "result": "pass"
+    },
+    {
+      "id": "00155",
+      "result": "pass"
+    },
+    {
+      "id": "00156",
+      "result": "pass"
+    },
+    {
+      "id": "00157",
+      "result": "pass"
+    },
+    {
+      "id": "00158",
+      "result": "pass"
+    },
+    {
+      "id": "00159",
+      "result": "pass"
+    },
+    {
+      "id": "00160",
+      "result": "pass"
+    },
+    {
+      "id": "00161",
+      "result": "pass"
+    },
+    {
+      "id": "00162",
+      "result": "pass"
+    },
+    {
+      "id": "00163",
+      "result": "pass"
+    },
+    {
+      "id": "00164",
+      "result": "pass"
+    },
+    {
+      "id": "00165",
+      "result": "pass"
+    },
+    {
+      "id": "00166",
+      "result": "pass"
+    },
+    {
+      "id": "00167",
+      "result": "pass"
+    },
+    {
+      "id": "00168",
+      "result": "pass"
+    },
+    {
+      "id": "00169",
+      "result": "pass"
+    },
+    {
+      "id": "00170",
+      "result": "pass"
+    },
+    {
+      "id": "00171",
+      "result": "pass"
+    },
+    {
+      "id": "00172",
+      "result": "pass"
+    },
+    {
+      "id": "00173",
+      "result": "pass"
+    },
+    {
+      "id": "00174",
+      "result": "pass"
+    },
+    {
+      "id": "00175",
+      "result": "pass"
+    },
+    {
+      "id": "00176",
+      "result": "pass"
+    },
+    {
+      "id": "00177",
+      "result": "pass"
+    },
+    {
+      "id": "00178",
+      "result": "pass"
+    },
+    {
+      "id": "00179",
+      "result": "pass"
+    },
+    {
+      "id": "00180",
+      "result": "pass"
+    },
+    {
+      "id": "00181",
+      "result": "pass"
+    },
+    {
+      "id": "00182",
+      "result": "pass"
+    },
+    {
+      "id": "00183",
+      "result": "pass"
+    },
+    {
+      "id": "00184",
+      "result": "pass"
+    },
+    {
+      "id": "00185",
+      "result": "pass"
+    },
+    {
+      "id": "00186",
+      "result": "pass"
+    },
+    {
+      "id": "00187",
+      "result": "pass"
+    },
+    {
+      "id": "00188",
+      "result": "pass"
+    },
+    {
+      "id": "00189",
+      "result": "pass"
+    },
+    {
+      "id": "00190",
+      "result": "pass"
+    },
+    {
+      "id": "00191",
+      "result": "pass"
+    },
+    {
+      "id": "00192",
+      "result": "pass"
+    },
+    {
+      "id": "00193",
+      "result": "pass"
+    },
+    {
+      "id": "00194",
+      "result": "pass"
+    },
+    {
+      "id": "00195",
+      "result": "pass"
+    },
+    {
+      "id": "00196",
+      "result": "pass"
+    },
+    {
+      "id": "00197",
+      "result": "pass"
+    },
+    {
+      "id": "00198",
+      "result": "pass"
+    },
+    {
+      "id": "00199",
+      "result": "pass"
+    },
+    {
+      "id": "00200",
+      "result": "pass"
+    },
+    {
+      "id": "00201",
+      "result": "pass"
+    },
+    {
+      "id": "00202",
+      "result": "pass"
+    },
+    {
+      "id": "00203",
+      "result": "pass"
+    },
+    {
+      "id": "00204",
+      "result": "pass"
+    },
+    {
+      "id": "00205",
+      "result": "pass"
+    },
+    {
+      "id": "00206",
+      "result": "pass"
+    },
+    {
+      "id": "00207",
+      "result": "pass"
+    },
+    {
+      "id": "00208",
+      "result": "pass"
+    },
+    {
+      "id": "00209",
+      "result": "pass"
+    },
+    {
+      "id": "00210",
+      "result": "pass"
+    },
+    {
+      "id": "00211",
+      "result": "pass"
+    },
+    {
+      "id": "00212",
+      "result": "pass"
+    },
+    {
+      "id": "00213",
+      "result": "pass"
+    },
+    {
+      "id": "00214",
+      "result": "pass"
+    },
+    {
+      "id": "00215",
+      "result": "pass"
+    },
+    {
+      "id": "00216",
+      "result": "pass"
+    },
+    {
+      "id": "00217",
+      "result": "pass"
+    },
+    {
+      "id": "00218",
+      "result": "pass"
+    },
+    {
+      "id": "00219",
+      "result": "pass"
+    },
+    {
+      "id": "00220",
+      "result": "pass"
+    },
+    {
+      "id": "00221",
+      "result": "pass"
+    },
+    {
+      "id": "00222",
+      "result": "pass"
+    },
+    {
+      "id": "00223",
+      "result": "pass"
+    },
+    {
+      "id": "00224",
+      "result": "pass"
+    },
+    {
+      "id": "00225",
+      "result": "pass"
+    },
+    {
+      "id": "00226",
+      "result": "pass"
+    },
+    {
+      "id": "00227",
+      "result": "pass"
+    },
+    {
+      "id": "00228",
+      "result": "pass"
+    },
+    {
+      "id": "00229",
+      "result": "pass"
+    },
+    {
+      "id": "00230",
+      "result": "pass"
+    },
+    {
+      "id": "00231",
+      "result": "pass"
+    },
+    {
+      "id": "00232",
+      "result": "pass"
+    },
+    {
+      "id": "00233",
+      "result": "pass"
+    },
+    {
+      "id": "00234",
+      "result": "pass"
+    },
+    {
+      "id": "00235",
+      "result": "pass"
+    },
+    {
+      "id": "00236",
+      "result": "pass"
+    },
+    {
+      "id": "00237",
+      "result": "pass"
+    },
+    {
+      "id": "00238",
+      "result": "pass"
+    },
+    {
+      "id": "00239",
+      "result": "pass"
+    },
+    {
+      "id": "00240",
+      "result": "pass"
+    },
+    {
+      "id": "00241",
+      "result": "pass"
+    },
+    {
+      "id": "00242",
+      "result": "pass"
+    },
+    {
+      "id": "00243",
+      "result": "pass"
+    },
+    {
+      "id": "00244",
+      "result": "pass"
+    },
+    {
+      "id": "00245",
+      "result": "pass"
+    },
+    {
+      "id": "00246",
+      "result": "pass"
+    },
+    {
+      "id": "00247",
+      "result": "pass"
+    },
+    {
+      "id": "00254",
+      "result": "pass"
+    },
+    {
+      "id": "00255",
+      "result": "pass"
+    },
+    {
+      "id": "00256",
+      "result": "pass"
+    },
+    {
+      "id": "00257",
+      "result": "pass"
+    },
+    {
+      "id": "00258",
+      "result": "pass"
+    },
+    {
+      "id": "00259",
+      "result": "pass"
+    },
+    {
+      "id": "00260",
+      "result": "pass"
+    },
+    {
+      "id": "00261",
+      "result": "pass"
+    },
+    {
+      "id": "00262",
+      "result": "pass"
+    },
+    {
+      "id": "00263",
+      "result": "pass"
+    },
+    {
+      "id": "00264",
+      "result": "pass"
+    },
+    {
+      "id": "00265",
+      "result": "pass"
+    },
+    {
+      "id": "00266",
+      "result": "pass"
+    },
+    {
+      "id": "00267",
+      "result": "pass"
+    },
+    {
+      "id": "00268",
+      "result": "pass"
+    },
+    {
+      "id": "00269",
+      "result": "pass"
+    },
+    {
+      "id": "00270",
+      "result": "pass"
+    },
+    {
+      "id": "00271",
+      "result": "pass"
+    },
+    {
+      "id": "00272",
+      "result": "pass"
+    },
+    {
+      "id": "00273",
+      "result": "pass"
+    },
+    {
+      "id": "00274",
+      "result": "pass"
+    },
+    {
+      "id": "00275",
+      "result": "pass"
+    },
+    {
+      "id": "00276",
+      "result": "pass"
+    },
+    {
+      "id": "00277",
+      "result": "pass"
+    },
+    {
+      "id": "00278",
+      "result": "pass"
+    },
+    {
+      "id": "00279",
+      "result": "pass"
+    },
+    {
+      "id": "00280",
+      "result": "pass"
+    },
+    {
+      "id": "00281",
+      "result": "pass"
+    },
+    {
+      "id": "00282",
+      "result": "pass"
+    },
+    {
+      "id": "00283",
+      "result": "pass"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "cardano-node",
+  "name": "Cardano node",
+  "language": "Haskell",
+  "repository": "https://github.com/IntersectMBO/cardano-node",
+  "website": "https://cardano.org/",
+  "color": "#5e5086",
+  "reports": {
+    "cbor-decoding": "https://raw.githubusercontent.com/etorreborre/cardano-cbor-dataset/etorreborre/feat/normalization/dataset/reports/conway-123-100/latest.json"
+  }
+}

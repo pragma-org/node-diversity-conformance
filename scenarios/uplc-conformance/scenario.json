@@ -1,0 +1,8 @@
+{
+  "id": "uplc-conformance",
+  "version": "1",
+  "title": "UPLC conformance",
+  "kind": "functional",
+  "description": "Evaluate the complete UPLC vector set, including regression vectors. Compare the resulting term or failure independently from the consumed execution budget; vectors without an applicable budget outcome remain part of evaluation conformance and are excluded only from the budget denominator.",
+  "schema": "scenarios/uplc-conformance/schema.json"
+}

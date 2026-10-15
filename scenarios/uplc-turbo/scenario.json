@@ -1,0 +1,8 @@
+{
+  "id": "uplc-turbo",
+  "version": "1",
+  "title": "UPLC turbo benchmarks",
+  "kind": "non-functional",
+  "description": "Run a fixed corpus of flat-encoded UPLC programs. For each script, decode it into the VM representation and evaluate it with an unbounded budget, using 10 timed samples per script in the Amaru CI setup. Report the mean and maximum execution measurements for every script and compare available CPU and memory measurements with the consumed execution budgets within a 50% tolerance.",
+  "schema": "scenarios/uplc-turbo/schema.json"
+}

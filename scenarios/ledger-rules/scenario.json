@@ -1,0 +1,8 @@
+{
+  "id": "ledger-rules",
+  "version": "1",
+  "title": "Ledger transaction rules",
+  "kind": "functional",
+  "description": "Apply each versioned raw-CBOR transaction fixture to its declared era history, protocol parameters, network, initial state, and point. The implementation must accept fixtures marked pass and reject fixtures marked fail with the expected validation predicate; result reports contain only the stable five-digit fixture id and observed result.",
+  "schema": "scenarios/ledger-rules/schema.json"
+}

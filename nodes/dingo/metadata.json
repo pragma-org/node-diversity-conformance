@@ -1,0 +1,14 @@
+{
+  "id": "dingo",
+  "name": "Dingo",
+  "language": "Go",
+  "repository": "https://github.com/blinklabs-io/dingo",
+  "website": "https://docs.blinklabs.io/guides/dingo/001-dingo/",
+  "color": "#90541a",
+  "reports": {
+    "cbor-decoding": {
+      "github_releases": "blinklabs-io/dingo",
+      "asset": "dingo-*-cbor-conformance.json"
+    }
+  }
+}
