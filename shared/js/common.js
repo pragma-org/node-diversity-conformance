@@ -13,6 +13,13 @@ const ns = (value) => {
   if (number >= 1e3) return `${(number / 1e3).toFixed(2)} μs`;
   return `${number.toFixed(0)} ns`;
 };
+const us = (value) => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '—';
+  if (number >= 1e6) return `${(number / 1e6).toFixed(2)} s`;
+  if (number >= 1e3) return `${(number / 1e3).toFixed(2)} ms`;
+  return `${number.toFixed(0)} μs`;
+};
 const ratio = (passed, total) => Number(total) ? Number(passed) / Number(total) : null;
 const pct = (value) => value === null || value === undefined ? '—' : `${(Number(value) * 100).toFixed(2)}%`;
 

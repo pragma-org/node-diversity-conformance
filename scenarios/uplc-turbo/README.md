@@ -6,29 +6,37 @@ programs visible across implementations.
 
 ## Setup
 
-1. Download the pinned turbo corpus and record its identifier or digest.
+1. Use the pinned turbo corpus.
 2. For every flat-encoded program, decode it into the implementation's VM
-   representation and evaluate it with an unbounded execution budget.
-3. Repeat each script measurement for the configured sample count. The Amaru
-   CI setup currently uses 10 samples per script.
-4. Report the decode time, evaluation time, and total wall-clock time in
-   nanoseconds. The total includes decode, evaluation, and the benchmark's
-   reset step; report the mean and maximum for each script.
-5. Compare the maximum execution time with the consumed CPU budget using one
-   picosecond per CPU unit. Compare arena growth during evaluation with the
-   consumed memory budget using one byte per memory unit. The presentation
-   accepts a result when both ratios are at most 1.50. The arena measurement is an
-   implementation-neutral approximation, not an allocator profile.
-6. Emit one JSON report matching [`schema.json`](schema.json), including the
-   corpus id, protocol version, sample count, budget deviation, and one record
-   for every script. Memory measurements may be `null` when the implementation
-   cannot provide them; CPU measurements remain independently reportable. The
-   presentation treats all Plutus language versions as one corpus.
-7. Group exact or near-duplicate flat programs when their serialized bytes are
-   at least 90% shared and their median measurements differ by no more than
-   10%. Keep the complete per-script records, but use one representative in
-   the compact presentation.
+   representation and evaluate it with the production evaluator and a
+   restrictive default budget. The evaluation must succeed.
+3. Measure flat decoding and pure CEK evaluation separately. Neither measure
+   includes arena reset, report generation, or other cleanup.
+4. Repeat each script according to the implementation's benchmark procedure
+   and report one representative `cpu_us`, `flat_us`, and `mem_bytes` value.
+5. Compare CPU and memory measurements with the consumed execution budgets.
+   Since CPU budgets are expressed in picoseconds, divide them by 1,000,000
+   to obtain the expected duration in microseconds. Memory uses one byte per
+   memory unit. CPU evaluation and flat decoding remain separate measurements,
+   but acceptance uses their combined time against the CPU budget. A combined
+   value no more than 50% above the budget passes; an absolute difference below
+   100 μs is also accepted. Memory measurements may be `null` when the
+   implementation cannot provide them; CPU and flat measurements remain
+   independently reportable. A consumed-budget disagreement is also a failed
+   result for the implementation treated as the outlier. Displayed deltas use
+   `(measured - budget) / budget`, so positive values are above budget and
+   negative values are below it.
+6. Emit one JSON report matching [`schema.json`](schema.json), including one
+   record for every script. Each record contains the script id, Plutus version,
+   protocol version, consumed budget, measured CPU time, measured flat decoding
+   time, measured memory, and flat script size. The report also records the
+   benchmark machine once, including its operating system, architecture, CPU,
+   logical-core count, and total memory when available. The presentation treats
+   all Plutus language versions as one corpus.
+7. Keep one raw record for every script. The presentation may summarize the
+   complete dataset and select a bounded set of worst cases for display, but it
+   must not discard the underlying measurements.
 
-The corpus, sample count, runtime, compiler profile, and cost model all affect
-the measurements. They must be recorded so that performance comparisons remain
-meaningful.
+The protocol version, runtime, compiler profile, and cost model all affect the
+measurements. The protocol version is recorded with each benchmark result so a
+corpus can contain scripts evaluated under different protocol versions.

@@ -6,6 +6,9 @@
   "website": "https://cardano.org/",
   "color": "#5e5086",
   "reports": {
-    "cbor-decoding": "https://raw.githubusercontent.com/etorreborre/cardano-cbor-dataset/etorreborre/feat/normalization/dataset/reports/conway-123-100/latest.json"
+    "cbor-decoding": "https://raw.githubusercontent.com/pragma-org/node-diversity-conformance/main/scenarios/cbor-decoding/preview/cardano-node.json",
+    "uplc-turbo": "https://raw.githubusercontent.com/pragma-org/node-diversity-conformance/main/scenarios/uplc-turbo/preview/cardano-node.json.zst",
+    "uplc-conformance": "https://raw.githubusercontent.com/pragma-org/node-diversity-conformance/main/scenarios/uplc-conformance/preview/cardano-node.json",
+    "ledger-rules": "https://raw.githubusercontent.com/pragma-org/node-diversity-conformance/main/scenarios/ledger-rules/preview/cardano-node.json"
   }
 }
