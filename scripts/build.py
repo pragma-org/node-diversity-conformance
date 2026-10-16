@@ -214,6 +214,11 @@ def parse_report(payload, scenario):
         raise ValueError("report must declare schema_version=1")
     if report.get("scenario") != scenario["id"]:
         raise ValueError(f"report belongs to {report.get('scenario')!r}, expected {scenario['id']!r}")
+    if "error" in report:
+        error = report["error"]
+        if not isinstance(error, str) or not error.strip():
+            raise ValueError("report error must be a non-empty string")
+        raise ValueError(error)
     return report
 
 

@@ -3,7 +3,7 @@
   "$id": "https://node-diversity-conformance.pragma.io/scenarios/uplc-turbo/schema.json",
   "title": "UPLC turbo benchmark scenario report",
   "type": "object",
-  "required": ["schema_version", "scenario", "generated_at", "implementation", "benchmarks"],
+  "required": ["schema_version", "scenario", "generated_at"],
   "properties": {
     "schema_version": { "const": "1" },
     "scenario": { "const": "uplc-turbo" },
@@ -25,11 +25,27 @@
     "machine": {
       "$ref": "#/$defs/machine"
     },
+    "error": { "type": "string", "minLength": 1 },
     "benchmarks": {
       "type": "array",
       "items": { "$ref": "#/$defs/benchmark" }
     }
   },
+  "oneOf": [
+    {
+      "required": ["implementation", "error"],
+      "not": {
+        "anyOf": [
+          { "required": ["machine"] },
+          { "required": ["benchmarks"] }
+        ]
+      }
+    },
+    {
+      "required": ["implementation", "benchmarks"],
+      "not": { "required": ["error"] }
+    }
+  ],
   "additionalProperties": false,
   "$defs": {
     "machine": {
