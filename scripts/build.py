@@ -368,6 +368,8 @@ def turbo_ratio(item, dimension):
 
 
 def turbo_passes(item, dimension):
+    if item.get("error"):
+        return False
     if dimension in ("cpu", "flat"):
         if dimension == "flat" and turbo_value(item, "flat") is None:
             return None

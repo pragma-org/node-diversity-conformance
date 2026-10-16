@@ -118,6 +118,9 @@ function metricCell(entry, dimension) {
   const valueField = dimension === 'memory' ? 'mem_bytes' : dimension === 'flat' ? 'flat_us' : 'cpu_us';
   const ratioField = dimension === 'memory' ? 'mem_ratio' : dimension === 'flat' ? 'flat_ratio' : 'cpu_ratio';
   const passField = dimension === 'memory' ? 'mem_pass' : dimension === 'flat' ? 'flat_pass' : 'cpu_pass';
+  if (entry?.error) {
+    return `<td class="turbo-node-cell turbo-value-cell" title="${esc(entry.error)}"><span class="turbo-cell-values"><span class="measure">Not measured</span><span class="deviation"></span></span></td>`;
+  }
   if (dimension === 'cpu-flat') {
     const cpu = numeric(entry?.cpu_us);
     const flat = numeric(entry?.flat_us);

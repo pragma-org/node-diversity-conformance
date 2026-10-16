@@ -54,9 +54,9 @@
         "budget_cpu": { "type": ["integer", "null"], "minimum": 0 },
         "budget_mem": { "type": ["integer", "null"], "minimum": 0 },
         "cpu_us": {
-          "type": "number",
+          "type": ["number", "null"],
           "minimum": 0,
-          "description": "Mean pure CEK evaluation time in microseconds."
+          "description": "Mean pure CEK evaluation time in microseconds, or null when evaluation did not complete."
         },
         "flat_us": {
           "type": ["number", "null"],
@@ -64,8 +64,23 @@
           "description": "Mean flat decoding time in microseconds, or null when decoding was not measured."
         },
         "mem_bytes": { "type": ["number", "null"], "minimum": 0 },
-        "size_bytes": { "type": ["integer", "null"], "minimum": 0 }
+        "size_bytes": { "type": ["integer", "null"], "minimum": 0 },
+        "error": { "type": "string", "minLength": 1 }
       },
+      "allOf": [
+        {
+          "if": { "required": ["error"] },
+          "then": {
+            "properties": {
+              "budget_cpu": { "type": "null" },
+              "budget_mem": { "type": "null" },
+              "cpu_us": { "type": "null" },
+              "flat_us": { "type": "null" },
+              "mem_bytes": { "type": "null" }
+            }
+          }
+        }
+      ],
       "additionalProperties": false
     }
   }
