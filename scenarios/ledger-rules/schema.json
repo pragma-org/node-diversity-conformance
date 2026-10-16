@@ -3,12 +3,13 @@
   "$id": "https://node-diversity-conformance.pragma.io/scenarios/ledger-rules/schema.json",
   "title": "Ledger transaction-rule scenario report",
   "type": "object",
-  "required": ["schema_version", "scenario", "generated_at", "corpus", "totals", "scenarios"],
+  "required": ["schema_version", "scenario", "generated_at"],
   "properties": {
     "schema_version": { "const": "1" },
     "scenario": { "const": "ledger-rules" },
     "generated_at": { "type": "string", "format": "date-time" },
     "implementation": { "type": "object" },
+    "error": { "type": "string", "minLength": 1 },
     "corpus": { "type": "string" },
     "totals": {
       "type": "object",
@@ -32,5 +33,21 @@
         "additionalProperties": false
       }
     }
-  }
+  },
+  "oneOf": [
+    {
+      "required": ["implementation", "error"],
+      "not": {
+        "anyOf": [
+          { "required": ["corpus"] },
+          { "required": ["totals"] },
+          { "required": ["scenarios"] }
+        ]
+      }
+    },
+    {
+      "required": ["corpus", "totals", "scenarios"],
+      "not": { "required": ["error"] }
+    }
+  ]
 }
