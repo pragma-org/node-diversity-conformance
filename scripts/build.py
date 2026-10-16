@@ -8,6 +8,7 @@ assembled into an independent directory under ``_site/scenarios``.
 """
 
 import argparse
+from collections import Counter
 import fnmatch
 import gzip
 import html
@@ -25,7 +26,8 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "_site"
 TIMEOUT_SECONDS = 60
 TURBO_DEVIATION_LIMIT = 1.5
-TURBO_ORDERS = ("cpu", "memory", "cpu-deviation", "memory-deviation")
+TURBO_CPU_TOLERANCE_US = 100
+TURBO_ORDERS = ("cpu", "flat", "memory", "cpu-flat-deviation", "memory-deviation")
 COMPRESSION_SUFFIXES = (".zst", ".gzip", ".gz")
 
 
@@ -219,6 +221,15 @@ def report_url(source):
     return source if isinstance(source, str) else latest_release_asset(source)
 
 
+def preview_report_path(scenario_id, node_id):
+    directory = ROOT / "scenarios" / scenario_id / "preview"
+    for suffix in ("", *COMPRESSION_SUFFIXES):
+        path = directory / f"{node_id}.json{suffix}"
+        if path.is_file():
+            return path
+    return None
+
+
 def fetch_node(node, scenario, use_preview):
     entry = {
         "id": node["id"],
@@ -231,14 +242,14 @@ def fetch_node(node, scenario, use_preview):
         "error": None,
     }
     source = node.get("reports", {}).get(scenario["id"])
-    preview = ROOT / "scenarios" / scenario["id"] / "preview" / f"{node['id']}.json"
-    if source is None and not (use_preview and preview.is_file()):
+    preview = preview_report_path(scenario["id"], node["id"])
+    if source is None and not (use_preview and preview is not None):
         entry["error"] = "no report"
         return entry
     try:
-        if use_preview and preview.is_file():
-            entry["report_url"] = f"../../scenarios/{scenario['id']}/preview/{node['id']}.json"
-            payload = preview.read_bytes()
+        if use_preview and preview is not None:
+            entry["report_url"] = f"../../scenarios/{scenario['id']}/preview/{preview.name}"
+            payload = decompress_download((preview.name,), preview.read_bytes())
         else:
             entry["report_url"] = report_url(source)
             payload = download(entry["report_url"])
@@ -289,7 +300,7 @@ def load_ledger_definitions():
     return definitions
 
 
-def report_score(report, scenario_id=None, definitions=None):
+def report_score(report, scenario_id=None, definitions=None, turbo_budget_failures=None):
     """Return the comparable passed/total score represented by one report."""
     if not report:
         return 0, 0
@@ -313,86 +324,212 @@ def report_score(report, scenario_id=None, definitions=None):
         benchmarks = report["benchmarks"]
         passed = 0
         for item in benchmarks:
-            ratios = []
-            cpu_max = item.get("cpu_max_ns")
-            cpu_budget = item.get("budget_cpu")
-            if isinstance(cpu_max, (int, float)) and isinstance(cpu_budget, (int, float)) and cpu_budget > 0:
-                ratios.append(cpu_max / (cpu_budget / 1_000))
-            memory_max = item.get("mem_max_bytes")
-            memory_budget = item.get("budget_mem")
-            if isinstance(memory_max, (int, float)) and isinstance(memory_budget, (int, float)) and memory_budget > 0:
-                ratios.append(memory_max / memory_budget)
-            if ratios and all(value <= TURBO_DEVIATION_LIMIT for value in ratios):
+            if not turbo_benchmark_failed(item, turbo_budget_failures):
                 passed += 1
         return passed, len(benchmarks)
     return 0, 0
 
 
 def turbo_benchmarks(report):
+    report_protocol_version = (report or {}).get("protocol_version")
     return [
-        item
+        {
+            **item,
+            "protocol_version": item.get("protocol_version", report_protocol_version),
+        }
         for item in (report or {}).get("benchmarks", [])
         if isinstance(item, dict) and isinstance(item.get("bench"), str)
     ]
 
 
-def turbo_value(item, dimension, statistic):
-    prefix = "mem" if dimension == "memory" else "cpu"
-    unit = "bytes" if dimension == "memory" else "ns"
-    value = item.get(f"{prefix}_{statistic}_{unit}")
+def turbo_value(item, dimension):
+    field = {"cpu": "cpu_us", "memory": "mem_bytes", "flat": "flat_us"}[dimension]
+    value = item.get(field)
     return value if isinstance(value, (int, float)) else None
 
 
-def turbo_ratio(item, dimension, statistic):
-    value = turbo_value(item, dimension, statistic)
-    budget = item.get("budget_mem" if dimension == "memory" else "budget_cpu")
+def turbo_cpu_budget_us(item):
+    budget = item.get("budget_cpu")
+    return budget / 1_000_000 if isinstance(budget, (int, float)) and budget > 0 else None
+
+
+def turbo_cpu_elapsed_us(item):
+    values = [turbo_value(item, dimension) for dimension in ("cpu", "flat")]
+    values = [value for value in values if value is not None]
+    return sum(values) if values else None
+
+
+def turbo_ratio(item, dimension):
+    value = turbo_cpu_elapsed_us(item) if dimension == "cpu" else turbo_value(item, dimension)
+    budget = item.get("budget_mem") if dimension == "memory" else turbo_cpu_budget_us(item)
     if not isinstance(value, (int, float)) or not isinstance(budget, (int, float)) or budget <= 0:
         return None
-    return value / budget if dimension == "memory" else value / (budget / 1_000)
+    return value / budget
+
+
+def turbo_passes(item, dimension):
+    if dimension in ("cpu", "flat"):
+        if dimension == "flat" and turbo_value(item, "flat") is None:
+            return None
+        elapsed = turbo_cpu_elapsed_us(item)
+        expected = turbo_cpu_budget_us(item)
+        if elapsed is None or expected is None:
+            return None
+        if abs(elapsed - expected) < TURBO_CPU_TOLERANCE_US:
+            return True
+        return elapsed / expected <= TURBO_DEVIATION_LIMIT
+
+    ratio = turbo_ratio(item, dimension)
+    if ratio is None:
+        return None
+    return ratio <= TURBO_DEVIATION_LIMIT
+
+
+def turbo_failure_dimension(order):
+    return "memory" if order in ("memory", "memory-deviation") else "flat" if order == "flat" else "cpu"
+
+
+def turbo_order_failed(item, order):
+    result = turbo_passes(item, turbo_failure_dimension(order))
+    return result is False
+
+
+def turbo_benchmark_failed(item, turbo_budget_failures=None):
+    if item.get("bench") in (turbo_budget_failures or set()):
+        return True
+    checks = [turbo_passes(item, dimension) for dimension in ("cpu", "memory", "flat")]
+    checks = [value for value in checks if value is not None]
+    return not checks or not all(checks)
 
 
 def turbo_dimension_summary(items, dimension):
-    means = [
-        (turbo_value(item, dimension, "mean"), turbo_ratio(item, dimension, "mean"))
+    observations = [
+        (turbo_value(item, dimension), turbo_ratio(item, dimension))
         for item in items
     ]
-    maxima = [
-        (turbo_value(item, dimension, "max"), turbo_ratio(item, dimension, "max"))
-        for item in items
-    ]
-    values = [value for value, _ in means if value is not None]
-    mean_ratios = [ratio for _, ratio in means if ratio is not None]
-    max_values = [value for value, _ in maxima if value is not None]
-    max_ratios = [ratio for _, ratio in maxima if ratio is not None]
+    values = [value for value, _ in observations if value is not None]
+    ratios = [ratio for _, ratio in observations if ratio is not None]
     return {
         "mean": sum(values) / len(values) if values else None,
-        "mean_ratio": sum(mean_ratios) / len(mean_ratios) if mean_ratios else None,
-        "max": max(max_values) if max_values else None,
-        "max_ratio": max(max_ratios) if max_ratios else None,
+        "mean_ratio": sum(ratios) / len(ratios) if ratios else None,
+        "max": max(values) if values else None,
+        "max_ratio": max(ratios) if ratios else None,
         "available": bool(values),
     }
 
 
-def turbo_summary(report):
+def turbo_summary(report, turbo_budget_failures=None):
     items = turbo_benchmarks(report)
-    passed = 0
-    for item in items:
-        ratios = [
-            turbo_ratio(item, dimension, "max")
-            for dimension in ("cpu", "memory")
-        ]
-        ratios = [value for value in ratios if value is not None]
-        if ratios and all(value <= TURBO_DEVIATION_LIMIT for value in ratios):
-            passed += 1
+    passed = sum(not turbo_benchmark_failed(item, turbo_budget_failures) for item in items)
     return {
         "passed": passed,
         "total": len(items),
+        "machine": report.get("machine"),
         "cpu": turbo_dimension_summary(items, "cpu"),
         "memory": turbo_dimension_summary(items, "memory"),
+        "flat": turbo_dimension_summary(items, "flat"),
     }
 
 
-def build_turbo_views(entries):
+def turbo_budget_analysis(entries, limit=10):
+    reports = {
+        entry["id"]: turbo_benchmarks(entry["report"])
+        for entry in entries
+        if entry["report"] is not None
+    }
+    indexes = {
+        node_id: {item["bench"]: item for item in items}
+        for node_id, items in reports.items()
+    }
+    metadata = {
+        item["bench"]: item
+        for items in reports.values()
+        for item in items
+    }
+    benchmark_ids = sorted({item["bench"] for items in reports.values() for item in items})
+    disagreements = []
+    disagreements_by_node = Counter()
+    failed_by_node = {node_id: set() for node_id in reports}
+
+    for bench in benchmark_ids:
+        values = {
+            entry["id"]: {
+                "cpu": indexes.get(entry["id"], {}).get(bench, {}).get("budget_cpu"),
+                "mem": indexes.get(entry["id"], {}).get(bench, {}).get("budget_mem"),
+            }
+            for entry in entries
+        }
+        statuses = {}
+        has_disagreement = False
+
+        for dimension in ("cpu", "mem"):
+            observed = {
+                node_id: value[dimension]
+                for node_id, value in values.items()
+                if isinstance(value[dimension], (int, float)) and not isinstance(value[dimension], bool)
+            }
+            distinct = len(set(observed.values())) > 1
+            has_disagreement |= distinct
+            majority = Counter(observed.values()).most_common(1)[0] if observed else (None, 0)
+            clear_majority = distinct and majority[1] * 2 > len(observed)
+            statuses[dimension] = {
+                node_id: (
+                    "missing"
+                    if node_id not in observed
+                    else "agree"
+                    if not distinct or (clear_majority and observed[node_id] == majority[0])
+                    else "agree"
+                    if not clear_majority and node_id == "cardano-node"
+                    else "outlier"
+                )
+                for node_id in values
+            }
+
+        if has_disagreement:
+            outlier_nodes = {
+                node_id
+                for dimension_statuses in statuses.values()
+                for node_id, status in dimension_statuses.items()
+                if status == "outlier"
+            }
+            for node_id in outlier_nodes:
+                disagreements_by_node[node_id] += 1
+                failed_by_node[node_id].add(bench)
+
+            disagreements.append({
+                "bench": bench,
+                "plutus_version": metadata.get(bench, {}).get("plutus_version"),
+                "protocol_version": metadata.get(bench, {}).get("protocol_version"),
+                "nodes": {
+                    node_id: {
+                        "cpu": values[node_id]["cpu"],
+                        "cpu_status": statuses["cpu"][node_id],
+                        "mem": values[node_id]["mem"],
+                        "mem_status": statuses["mem"][node_id],
+                    }
+                    for node_id in values
+                },
+            })
+
+    return (
+        {
+            "total": len(disagreements),
+            "items": disagreements[-limit:],
+            "by_node": {
+                node_id: disagreements_by_node[node_id]
+                for node_id in reports
+            },
+        },
+        failed_by_node,
+    )
+
+
+def turbo_budget_disagreements(entries, limit=10):
+    report, _ = turbo_budget_analysis(entries, limit)
+    return report
+
+
+def build_turbo_views(entries, turbo_budget_failures):
     reports = {
         entry["id"]: turbo_benchmarks(entry["report"])
         for entry in entries
@@ -403,7 +540,7 @@ def build_turbo_views(entries):
         for node_id, items in reports.items()
     }
     summaries = {
-        entry["id"]: turbo_summary(entry["report"])
+        entry["id"]: turbo_summary(entry["report"], turbo_budget_failures.get(entry["id"], set()))
         for entry in entries
         if entry["report"] is not None
     }
@@ -411,39 +548,56 @@ def build_turbo_views(entries):
     for source_id, items in reports.items():
         source_views = {}
         for order in TURBO_ORDERS:
-            dimension = "memory" if order in ("memory", "memory-deviation") else "cpu"
-            statistic = "max"
+            dimension = {
+                "flat": "flat",
+                "memory": "memory",
+                "memory-deviation": "memory",
+            }.get(order, "cpu")
+
             def order_value(item):
-                value = turbo_ratio(item, dimension, statistic) if order.endswith("deviation") else turbo_value(item, dimension, statistic)
+                value = turbo_ratio(item, dimension) if order in ("cpu-flat-deviation", "memory-deviation") else turbo_value(item, dimension)
                 return (value is None, -(value or 0))
 
-            selected = sorted(
-                items,
-                key=lambda item: (*order_value(item), item["bench"]),
+            def view_items(candidates):
+                return [
+                    {
+                        "bench": item["bench"],
+                        "plutus_version": item.get("plutus_version"),
+                        "protocol_version": item.get("protocol_version"),
+                        "nodes": {
+                            node_id: {
+                                "cpu_us": node_item.get("cpu_us"),
+                                "cpu_ratio": turbo_ratio(node_item, "cpu"),
+                                # Keep budget consistency failures separate from the
+                                # measured timing verdict shown in the table.
+                                "cpu_pass": turbo_passes(node_item, "cpu"),
+                                "mem_bytes": node_item.get("mem_bytes"),
+                                "mem_ratio": turbo_ratio(node_item, "memory"),
+                                "mem_pass": turbo_passes(node_item, "memory"),
+                                "flat_us": node_item.get("flat_us"),
+                                "flat_ratio": turbo_ratio(node_item, "flat"),
+                                "flat_pass": turbo_passes(node_item, "flat"),
+                            }
+                            for node_id, index in indexes.items()
+                            for node_item in [index.get(item["bench"])]
+                            if node_item is not None
+                        },
+                    }
+                    for item in candidates
+                ]
+
+            ordered = sorted(items, key=lambda item: (*order_value(item), item["bench"]))
+            source_views[order] = view_items(ordered[:10])
+            source_views[f"{order}-failed"] = view_items(
+                item for item in ordered if turbo_order_failed(item, order)
             )[:10]
-            source_views[order] = [
-                {
-                    "bench": item["bench"],
-                    "nodes": {
-                        node_id: {
-                            "cpu_max_ns": node_item.get("cpu_max_ns"),
-                            "cpu_ratio": turbo_ratio(node_item, "cpu", "max"),
-                            "mem_max_bytes": node_item.get("mem_max_bytes"),
-                            "mem_ratio": turbo_ratio(node_item, "memory", "max"),
-                        }
-                        for node_id, index in indexes.items()
-                        for node_item in [index.get(item["bench"])]
-                        if node_item is not None
-                    },
-                }
-                for item in selected
-            ]
         views[source_id] = source_views
     return summaries, views
 
 
 def build_node_catalog(nodes, scenarios, scenario_entries, built_at):
     definitions = load_ledger_definitions()
+    _, turbo_budget_failures = turbo_budget_analysis(scenario_entries.get("uplc-turbo", []))
     denominators = {}
     for scenario in scenarios:
         scenario_id = scenario["id"]
@@ -469,7 +623,12 @@ def build_node_catalog(nodes, scenarios, scenario_entries, built_at):
         for scenario in scenarios:
             scenario_id = scenario["id"]
             report = entries[scenario_id]["report"]
-            passed, total = report_score(report, scenario_id, definitions)
+            passed, total = report_score(
+                report,
+                scenario_id,
+                definitions,
+                turbo_budget_failures.get(node["id"], set()),
+            )
             denominator = denominators[scenario_id]
             ratio = passed / denominator if denominator else 0
             weighted_ratio += ratio / len(scenarios)
@@ -523,13 +682,15 @@ def build_scenario(scenario, nodes, built_at, use_preview):
     if scenario["id"] == "ledger-rules":
         data["definitions"] = load_ledger_definitions()
     elif scenario["id"] == "uplc-turbo":
-        summaries, views = build_turbo_views(entries)
+        turbo_disagreements, turbo_budget_failures = turbo_budget_analysis(entries)
+        summaries, views = build_turbo_views(entries, turbo_budget_failures)
         data["turbo_summary"] = summaries
         data["turbo_views"] = views
+        data["turbo_disagreements"] = turbo_disagreements
         data["nodes"] = [
             {
                 **entry,
-                "report": {"setup": entry["report"].get("setup")}
+                "report": {"implementation": entry["report"].get("implementation")}
                 if entry["report"] is not None
                 else None,
             }
