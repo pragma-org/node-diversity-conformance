@@ -21,6 +21,9 @@ This is a non-functional performance scenario focus on the UPLC virtual machine,
    | `budget_mem` | Counted mem cost (through the costing model)                                 |
    | `size_bytes` | Size, in bytes, of the flat-serialised script                                |
 
+   A program that cannot be measured remains in `benchmarks` with null
+   measurements and an `error` reason. It counts as a failed benchmark.
+
 3. /!\ Use the correct semantics and default cost models depending on each epoch (otherwise, scripts may fail to evaluate due to budget restriction and comparison across implementations is compromised). For the corpus, the following versions are relevant:
 
    | Epoch             | Protocol Version |
