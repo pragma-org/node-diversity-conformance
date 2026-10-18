@@ -1,28 +1,45 @@
 # Ledger Transaction Rules Scenario
 
-This scenario compares ledger phase-one validation against a versioned set of
-raw transaction fixtures. Each fixture supplies its own era history, protocol
-parameters, network, initial state, ledger point, transaction bytes, and
-expected outcome.
+This functional scenario compares phase-one ledger validation across node
+implementations. Every implementation runs the same versioned transaction
+fixtures against the same ledger context and reports the observed validation
+outcome. The scenario is intentionally independent of any particular test
+framework or node repository.
 
 ## Setup
 
-1. Select the fixture set version from this directory's `fixtures/` tree.
-2. Load the shared documents referenced by the fixture and construct the
-   declared initial ledger state.
-3. Apply the raw transaction bytes without re-encoding them first.
-4. Mark a `pass` fixture successful only when validation accepts it. Mark a
-   `fail` fixture successful only when validation rejects it with the expected
-   predicate.
-5. Preserve the category declared by the fixture definition. Categories are
-   stable presentation metadata, not inferred from test names; use the
-   vocabulary in [`schema.json`](schema.json).
-6. Emit one JSON result per executed fixture matching [`schema.json`](schema.json).
-   Each result contains only the five-digit fixture id and either `pass` or the
-   observed predicate failure. The report must not duplicate fixture metadata;
-   the versioned definitions in this directory are the source of truth. Missing
-   results count as failures, while unrecognized result ids are ignored.
+The complete fixture corpus lives under
+[`fixtures/`](fixtures/). The files in that directory are part of the scenario
+version and must be treated as immutable test inputs during a run.
 
-The fixture files are versioned in this repository so they can be downloaded
-and referenced independently of a node implementation. Update the scenario
-version when the fixture set changes.
+Each file in [`fixtures/scenarios/`](fixtures/scenarios/) describes one test
+case identified by a unique id.
+
+To implement this scenario:
+
+1. Enumerate the JSON files in `fixtures/scenarios/` and use the first five
+   digits of each filename as its id.
+
+2. Resolve every referenced document from the fixture tree, including the era
+   history, protocol parameters, credentials, initial UTxO and governance
+   state.
+
+3. Decode the transaction from the fixture's CBOR value and construct the
+   validation context from the declared initial state.
+
+4. Validate the transaction at the declared network, point, and protocol
+   parameters.
+
+5. Record the observed outcome as `"pass"` or `{ "expected":
+   "SomePredicateFailure" }`, mapping your own ledger failures to one of the
+   listed predicate in the JSON schema.
+
+## Evaluation Method
+
+The files in this repository are treated as ground-truth, and any observed
+outcome is expected to match. A result is marked as failed when it doesn't.
+
+Any missing result from the report is considered failed. Extra or unrecognized
+ids are ignored.
+
+The report must conform to [`schema.json`](./schema.json).

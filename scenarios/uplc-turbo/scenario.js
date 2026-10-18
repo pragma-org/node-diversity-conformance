@@ -1,7 +1,6 @@
 'use strict';
 
 const turboState = { selected: null, order: 'cpu', failedOnly: false };
-const DEVIATION_THRESHOLD = 0.5;
 
 function numeric(value) {
   if (value === null || value === undefined || value === '') return null;
@@ -9,11 +8,11 @@ function numeric(value) {
   return Number.isFinite(number) ? number : null;
 }
 
-function signedDeviation(value) {
+function signedDelta(value) {
   const number = numeric(value);
   if (number === null) return '—';
-  const deviation = (number - 1) * 100;
-  return `${deviation > 0 ? '+' : ''}${deviation.toFixed(1)}%`;
+  const percentage = number * 100;
+  return `${percentage > 0 ? '+' : ''}${percentage.toFixed(1)}%`;
 }
 
 function shortId(value) {
@@ -79,71 +78,40 @@ function bindPairedRowHover(tableBody) {
   };
 }
 
-function metricRow(name, value, deviation) {
-  const status = deviation === null ? '' : deviation <= 1 + DEVIATION_THRESHOLD ? ' pass' : ' fail';
+function metricRow(name, value, delta, passed, suppressed = false) {
+  const status = passed === null || passed === undefined ? '' : passed ? ' pass' : ' fail';
   return `<span class="turbo-stat-label">${name}</span>
     <span class="turbo-stat-value">${value}</span>
-    <span class="turbo-stat-delta${status}">${deviation === null ? '' : ` Δ${signedDeviation(deviation)}`}</span>`;
+    <span class="turbo-stat-delta${status}">${delta === null ? (suppressed ? '-' : '') : ` Δ${signedDelta(delta)}`}</span>`;
 }
 
 function metricSummary(label, summary, formatter) {
   return `<div class="turbo-metric">
     <strong class="turbo-metric-label turbo-metric-label-span">${label}</strong>
-    ${metricRow('mean', formatter(summary.mean), numeric(summary.mean_ratio))}
-    ${metricRow('max', formatter(summary.max), numeric(summary.max_ratio))}
+    ${metricRow('mean', formatter(summary.mean), numeric(summary.mean_delta), summary.mean_pass, summary.mean_delta_suppressed)}
+    ${metricRow('max', formatter(summary.max), numeric(summary.max_delta), summary.max_pass, summary.max_delta_suppressed)}
   </div>`;
 }
 
 function machineSummary(machine) {
   if (!machine) return '';
-  const parts = [
-    [machine.os, machine.os_version].filter(Boolean).join(' '),
-    machine.architecture,
-    machine.cpu,
-    numeric(machine.logical_cores) === null ? null : `${fmt(machine.logical_cores)} logical cores`,
-    numeric(machine.memory_bytes) === null ? null : `${bytes(machine.memory_bytes)} RAM`,
-  ].filter(Boolean);
-  return parts.length === 0 ? '' : `<div class="turbo-machine">${parts.map(esc).join(' · ')}</div>`;
-}
-
-function cpuFlatSummary(cpu, flat) {
-  return `<div class="turbo-metric">
-    <strong class="turbo-metric-label turbo-metric-label-span">CPU + FLAT</strong>
-    ${metricRow('mean', `${duration(cpu.mean)} + ${duration(flat.mean)}`, numeric(cpu.mean_ratio))}
-    ${metricRow('max', `${duration(cpu.max)} + ${duration(flat.max)}`, numeric(cpu.max_ratio))}
-  </div>`;
+  return `<div class="turbo-machine">${[machine.architecture, machine.cpu].map(esc).join(' · ')}</div>`;
 }
 
 function metricCell(entry, dimension) {
-  const valueField = dimension === 'memory' ? 'mem_bytes' : dimension === 'flat' ? 'flat_us' : 'cpu_us';
-  const ratioField = dimension === 'memory' ? 'mem_ratio' : dimension === 'flat' ? 'flat_ratio' : 'cpu_ratio';
-  const passField = dimension === 'memory' ? 'mem_pass' : dimension === 'flat' ? 'flat_pass' : 'cpu_pass';
-  if (dimension === 'cpu-flat') {
-    const cpu = numeric(entry?.cpu_us);
-    const flat = numeric(entry?.flat_us);
-    const deviation = numeric(entry?.cpu_ratio);
-    if (cpu === null && flat === null) {
-      return '<td class="turbo-node-cell turbo-value-cell"><span class="turbo-cell-values"><span class="measure">—</span><span class="deviation"></span></span></td>';
-    }
-    const status = entry?.cpu_pass === true
-      ? 'pass'
-      : entry?.cpu_pass === false
-        ? 'fail'
-        : deviation === null ? '' : deviation <= 1 + DEVIATION_THRESHOLD ? 'pass' : 'fail';
-    const delta = deviation === null ? '' : `<span class="deviation ${status}"> Δ ${signedDeviation(deviation)}</span>`;
-    return `<td class="turbo-node-cell turbo-value-cell"><span class="turbo-cell-values"><span class="measure">${duration(cpu)} + ${duration(flat)}</span>${delta || '<span class="deviation"></span>'}</span></td>`;
-  }
+  const valueField = dimension === 'memory' ? 'mem_bytes' : 'cpu_us';
+  const deltaField = dimension === 'memory' ? 'mem_delta' : 'cpu_delta';
+  const suppressedField = dimension === 'memory' ? 'mem_delta_suppressed' : 'cpu_delta_suppressed';
+  const passField = dimension === 'memory' ? 'mem_pass' : 'cpu_pass';
   const value = numeric(entry?.[valueField]);
-  const deviation = numeric(entry?.[ratioField]);
+  const delta = deltaField ? numeric(entry?.[deltaField]) : null;
+  const suppressed = entry?.[suppressedField] === true;
   const formatted = dimension === 'memory' ? bytes(value) : duration(value);
   if (value === null) return `<td class="turbo-node-cell turbo-value-cell"><span class="turbo-cell-values"><span class="measure">${formatted}</span><span class="deviation"></span></span></td>`;
-  const status = entry?.[passField] === true
-    ? 'pass'
-    : entry?.[passField] === false
-      ? 'fail'
-      : deviation === null ? '' : deviation <= 1 + DEVIATION_THRESHOLD ? 'pass' : 'fail';
-  const delta = deviation === null ? '' : `<span class="deviation ${status}"> Δ ${signedDeviation(deviation)}</span>`;
-  return `<td class="turbo-node-cell turbo-value-cell"><span class="turbo-cell-values"><span class="measure">${formatted}</span>${delta || '<span class="deviation"></span>'}</span></td>`;
+  const formattedDelta = delta === null
+    ? suppressed ? '<span class="deviation">-</span>' : '<span class="deviation"></span>'
+    : `<span class="deviation ${entry?.[passField] === true ? 'pass' : entry?.[passField] === false ? 'fail' : ''}"> Δ ${signedDelta(delta)}</span>`;
+  return `<td class="turbo-node-cell turbo-value-cell"><span class="turbo-cell-values"><span class="measure">${formatted}</span>${formattedDelta}</span></td>`;
 }
 
 function budgetCell(entry, dimension) {
@@ -156,15 +124,20 @@ function budgetCell(entry, dimension) {
 function renderTurbo(data) {
   const loaded = data.nodes.filter((node) => node.report);
   turboState.selected = turboState.selected || loaded[0]?.id;
-  const reportFor = () => loaded.find((node) => node.id === turboState.selected)?.report;
 
   function renderSummary() {
     const cards = loaded.map((node) => {
       const summary = data.turbo_summary?.[node.id];
       const aggregateValue = summary || { passed: 0, total: 0 };
-      const cpu = summary?.cpu || { mean: null, mean_ratio: null, max: null, max_ratio: null, available: false };
-      const memory = summary?.memory || { mean: null, mean_ratio: null, max: null, max_ratio: null, available: false };
-      const flat = summary?.flat || { mean: null, mean_ratio: null, max: null, max_ratio: null, available: false };
+      const cpu = summary?.cpu || {
+        mean: null, mean_delta: null,
+        max: null, max_delta: null,
+        mean_pass: null, max_pass: null, available: false,
+      };
+      const memory = summary?.memory || {
+        mean: null, mean_delta: null, max: null, max_delta: null,
+        mean_pass: null, max_pass: null, available: false,
+      };
       const failures = aggregateValue.total - aggregateValue.passed;
       const complete = aggregateValue.total > 0 && failures === 0;
       return `<button type="button" class="panel card turbo-node-card${node.id === turboState.selected ? ' selected' : ''}" data-node-id="${esc(node.id)}">
@@ -173,7 +146,7 @@ function renderTurbo(data) {
         <div><span class="score ${complete ? 'pass' : 'fail'}">${pct(ratio(aggregateValue.passed, aggregateValue.total))}</span><span class="ratio">${fmt(aggregateValue.passed)} / ${fmt(aggregateValue.total)} scripts</span></div>
         ${machineSummary(summary?.machine)}
         <div class="turbo-metrics">
-          ${cpuFlatSummary(cpu, flat)}
+          ${metricSummary('CPU', cpu, duration)}
           ${metricSummary('MEM', memory, bytes)}
           <div class="turbo-metric">
             <strong class="turbo-metric-label">BUDGET</strong>
@@ -200,13 +173,13 @@ function renderTurbo(data) {
     const nodes = data.nodes;
     const sourceNode = nodes.find((node) => node.id === turboState.selected);
     const sourceLabel = sourceNode
-      ? `${turboState.failedOnly ? 'failed' : 'top 10'} across all versions · selected source: ${sourceNode.name}`
+      ? `${turboState.failedOnly ? 'failed' : 'top 100'} across all versions · selected source: ${sourceNode.name}`
       : 'no source selected';
     const title = $('worst-cases-title');
     if (title)  {
       title.innerHTML = sourceNode
-        ? `${turboState.failedOnly ? 'Failed' : 'Worst'} ${nodeDot(sourceNode)} ${esc(sourceNode.name)} 10 cases`
-        : turboState.failedOnly ? 'Failed cases' : 'Worst 10 cases';
+        ? `${turboState.failedOnly ? 'Failed' : 'Worst'} ${nodeDot(sourceNode)} ${esc(sourceNode.name)}${turboState.failedOnly ? ' cases' : ' 100 cases'}`
+        : turboState.failedOnly ? 'Failed cases' : 'Worst 100 cases';
     }
     $('worst-cases-source')?.replaceChildren(document.createTextNode(sourceLabel));
     $('table-head').innerHTML = tableHeader('worst-cases-table', nodes);
@@ -216,7 +189,7 @@ function renderTurbo(data) {
       return `<tr class="turbo-result-row turbo-result-top" data-bench-row="${esc(id)}">
         <td class="turbo-fit-cell turbo-meta-cell" rowspan="2" title="${esc(id)}">${esc(shortId(id))}</td>
         <td class="turbo-fit-cell turbo-meta-cell" rowspan="2">${esc(versionLabel(entry))}</td>
-        <td class="turbo-fit-cell turbo-meta-cell turbo-dimension">CPU + FLAT</td>${cells('cpu-flat')}
+        <td class="turbo-fit-cell turbo-meta-cell turbo-dimension">CPU</td>${cells('cpu')}
       </tr>
       <tr class="turbo-result-row turbo-result-bottom" data-bench-row="${esc(id)}">
         <td class="turbo-fit-cell turbo-meta-cell turbo-dimension">MEM</td>${cells('memory')}
@@ -253,12 +226,8 @@ function renderTurbo(data) {
       button.setAttribute('aria-pressed', String(turboState.failedOnly));
     } else if (button.dataset.order) {
       turboState.order = button.dataset.order;
-      turboState.failedOnly = false;
       document.querySelectorAll('#turbo-filters [data-order]').forEach((candidate) =>
         candidate.classList.toggle('active', candidate === button));
-      const failedFilter = document.querySelector('#turbo-filters [data-filter="failed"]');
-      failedFilter?.classList.remove('active');
-      failedFilter?.setAttribute('aria-pressed', 'false');
     } else {
       return;
     }

@@ -19,8 +19,8 @@
   <section class="section">
     <div class="section-title">Method</div>
     <div class="prose">
-      <p>Each implementation decodes and evaluates the same flat-encoded UPLC corpus. The corpus has been created by sampling mainnet transactions, extracting scripts and pre-applying their script context. It therefore contains ready-to-evaluate real-world scripts spanning Plutus V1 and V2. Each report provides one representative measurement for flat decoding, pure CEK evaluation, and memory usage.</p>
-      <p>The benchmark compares evaluation time and memory growth with the expected CPU and memory budgets. CPU evaluation and flat decoding are measured separately, but their combined time is checked against the CPU budget. An execution passes when the combined CPU-related time is <u>at most 50%</u> above that budget; differences below 100 μs are treated as within tolerance. The report retains every script, while the compact view shows the ten slowest cases selected by the active node and ordering.</p>
+      <p>Each implementation evaluates the same real-world UPLC corpus. The corpus was created by sampling mainnet transactions and extracting Flat-encoded programs spanning Plutus V1, V2, and V3. Flat decoding is prepared before timing and measured by a separate scenario.</p>
+      <p>The benchmark compares pure CEK evaluation time and memory growth with the expected CPU and memory budgets. An execution passes when each measured dimension is <u>at most 100%</u> above its corresponding budget, or within an absolute tolerance of 200 μs for CPU or 320 KiB for memory. Results within those tolerances have no delta and are excluded from the corresponding summaries and worst-case views. The report retains every script, while the compact view shows the 100 worst cases selected by the active node and ordering in a scrollable viewport.</p>
     </div>
   </section>
 
@@ -31,22 +31,21 @@
 
   <section class="section">
     <div class="section-title section-title-controls">
-      <span id="worst-cases-title" class="icon-prefix">Worst 10 cases</span>
+      <span id="worst-cases-title" class="icon-prefix">Worst 100 cases</span>
       <div class="container wrap filter-bar" id="turbo-filters">
         <span class="label">Order by</span>
         <button class="button filter-btn active" data-order="cpu">CPU</button>
-        <button class="button filter-btn" data-order="flat">FLAT</button>
         <button class="button filter-btn" data-order="memory">MEM</button>
-        <button class="button filter-btn" data-order="cpu-flat-deviation">Δ CPU + FLAT</button>
+        <button class="button filter-btn" data-order="cpu-deviation">Δ CPU</button>
         <button class="button filter-btn" data-order="memory-deviation">Δ MEM</button>
         <span class="filter-sep" aria-hidden="true"></span>
         <button class="button filter-btn filter-toggle" data-filter="failed" aria-pressed="false">ONLY FAILED</button>
       </div>
     </div>
     <div class="prose">
-      <p>Worse 10 scenarios according to one of the selected dimension. Results are given for all nodes, but the focus can be changed by selecting a different node.</p>
+      <p>Worst 100 scenarios according to one of the selected dimensions. Results are given for all nodes, but the focus can be changed by selecting a different node. The table shows approximately ten results at a time and can be scrolled for the remaining cases.</p>
     </div>
-    <div class="table-wrap">
+    <div class="table-wrap turbo-table-viewport">
       <table id="worst-cases-table" class="turbo-table">
         <thead id="table-head"></thead>
         <tbody id="table-body"></tbody>

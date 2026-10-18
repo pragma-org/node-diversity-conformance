@@ -3,22 +3,17 @@
   "$id": "https://node-diversity-conformance.pragma.io/scenarios/ledger-rules/schema.json",
   "title": "Ledger transaction-rule scenario report",
   "type": "object",
-  "required": ["schema_version", "scenario", "generated_at", "corpus", "totals", "scenarios"],
+  "required": ["version", "scenario", "generated_at", "implementation", "scenarios"],
   "properties": {
-    "schema_version": { "const": "1" },
+    "version": { "const": "1" },
     "scenario": { "const": "ledger-rules" },
     "generated_at": { "type": "string", "format": "date-time" },
-    "implementation": { "type": "object" },
-    "corpus": { "type": "string" },
-    "totals": {
+    "implementation": {
       "type": "object",
-      "required": ["passed", "failed", "total"],
+      "required": [ "name" ],
       "properties": {
-        "passed": { "type": "integer", "minimum": 0 },
-        "failed": { "type": "integer", "minimum": 0 },
-        "total": { "type": "integer", "minimum": 0 }
-      },
-      "additionalProperties": false
+        "name": { "type": "string" }
+      }
     },
     "scenarios": {
       "type": "array",
@@ -26,10 +21,71 @@
         "type": "object",
         "required": ["id", "result"],
         "properties": {
+          "additionalProperties": false,
           "id": { "type": "string", "pattern": "^[0-9]{5}$" },
-          "result": { "type": "string", "minLength": 1 }
-        },
-        "additionalProperties": false
+          "result": {
+            "oneOf": [
+              { "const": "pass" },
+              { "const": "BabbageNonDisjointRefInputs" },
+              { "const": "BabbageOutputTooSmallUTxO" },
+              { "const": "BadInputsUTxO" },
+              { "const": "CommitteeHasPreviouslyResigned" },
+              { "const": "CommitteeIsUnknown" },
+              { "const": "ConflictingMetadataHash" },
+              { "const": "ConwayTreasuryValueMismatch" },
+              { "const": "ConwayTxRefScriptsSizeTooBig" },
+              { "const": "ConwayWdrlNotDelegatedToDRep" },
+              { "const": "DRepAlreadyRegistered" },
+              { "const": "DecodingFailure" },
+              { "const": "DelegateeDRepNotRegistered" },
+              { "const": "DelegateeStakePoolNotRegistered" },
+              { "const": "DisallowedVoters" },
+              { "const": "ExtraneousScriptWitnessesUTXOW" },
+              { "const": "FeeTooSmallUTxO" },
+              { "const": "GovActionsDoNotExist" },
+              { "const": "IncorrectDepositDELEG" },
+              { "const": "IncorrectTotalCollateralField" },
+              { "const": "InputSetEmptyUTxO" },
+              { "const": "InsufficientCollateral" },
+              { "const": "InvalidGuardrailsScriptHash" },
+              { "const": "InvalidPrevGovActionId" },
+              { "const": "InvalidWitnessesUTXOW" },
+              { "const": "MalformedReferenceScripts" },
+              { "const": "MalformedScriptWitnesses" },
+              { "const": "MaxTxSizeUTxO" },
+              { "const": "MissingScriptWitnessesUTXOW" },
+              { "const": "MissingTxBodyMetadataHash" },
+              { "const": "MissingTxMetadata" },
+              { "const": "MissingVerificationKeyWitnessesUTXOW" },
+              { "const": "NoCollateralInputs" },
+              { "const": "OutputTooBigUTxO" },
+              { "const": "OutsideForecast" },
+              { "const": "OutsideValidityIntervalUTxO" },
+              { "const": "ProposalCantFollow" },
+              { "const": "ProposalProcedureNetworkIdMismatch" },
+              { "const": "ProposalReturnAccountDoesNotExist" },
+              { "const": "ScriptsNotPaidUTxO" },
+              { "const": "StakeCredentialInvalidPoolDelegation" },
+              { "const": "StakeKeyHasNonZeroAccountBalance" },
+              { "const": "StakeKeyRegistered" },
+              { "const": "StakePoolCostTooLowPOOL" },
+              { "const": "StakePoolNotRegisteredOnKeyPOOL" },
+              { "const": "StakePoolRetirementWrongEpochPOOL" },
+              { "const": "TooManyCollateralInputs" },
+              { "const": "TreasuryWithdrawalReturnAccountsDoNotExist" },
+              { "const": "TreasuryWithdrawalsAllZeros" },
+              { "const": "ValidationTagMismatch" },
+              { "const": "ValueNotConservedUTxO" },
+              { "const": "VotersDoNotExist" },
+              { "const": "VotingOnExpiredGovAction" },
+              { "const": "WithdrawalsNotInRewardsCERTS" },
+              { "const": "WrongNetworkInTxBody" },
+              { "const": "WrongNetworkInTxOutput" },
+              { "const": "WrongNetworkPOOL" },
+              { "const": "WrongNetworkWithdrawal" }
+            ]
+          }
+        }
       }
     }
   }

@@ -3,9 +3,9 @@
   "$id": "https://node-diversity-conformance.pragma.io/scenarios/cbor-decoding/schema.json",
   "title": "CBOR decoding conformance report",
   "type": "object",
-  "required": ["schema_version", "scenario", "generated_at", "corpus", "protocol_version", "totals", "rules"],
+  "required": ["version", "scenario", "generated_at", "corpus", "protocol_version", "totals", "rules"],
   "properties": {
-    "schema_version": { "const": "1" },
+    "version": { "const": "1" },
     "scenario": { "const": "cbor-decoding" },
     "generated_at": {
       "oneOf": [

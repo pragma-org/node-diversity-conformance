@@ -102,7 +102,7 @@ _site/
 ```
 
 Before publishing a report, validate it against the schema named by its scenario. A report must contain
-`schema_version: "1"` and the matching `scenario` identifier. The homepage gives every scenario the
+`version: "1"` and the matching `scenario` identifier. The homepage gives every scenario the
 same weight: a node receives one quarter of the overall score for each of the four scenarios. An
 unavailable scenario contributes zero to the total and is shown as `-` on the node card.
 

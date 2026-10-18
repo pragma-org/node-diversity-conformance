@@ -8,22 +8,21 @@ excluded from the budget total.
 
 ## Setup
 
-1. Run every vector with its declared Plutus language version and protocol
-   version.
-2. Evaluate the program with the budget model selected for that version.
-3. Compare the resulting term or expected failure independently from the
-   consumed CPU and memory budget.
-4. Record the budget-model identifier and version in the report metadata.
-   Budget results from different models must not be compared as if they were
-   the same scenario.
-5. Emit one JSON report matching [`schema.json`](schema.json).
+1. Download and unpack the [test corpus](https://pub-2239d82d9a074482b2eb2c886191cb4e.r2.dev/uplc-conformance.tar.zst).
 
-## Expectations
+2. Run every vector with its declared Plutus language version and protocol
+   version. The protocol version is given by the top-level folder; plutus
+   versions are captured by the folders at the second level. Respective cost
+   models used for the test hardness are provided under `cost-models/`.
 
-Each vector has two functional dimensions: `evaluation` and `budget`. A vector
-is fully conformant when both applicable dimensions pass, but a report must
-preserve partial results when only one dimension has an outcome. The report
-names the source-folder group and records the exact budget models used at the
-top of the report. The current default model is `v3-pv11-default`; vectors for
-other language or protocol versions may use their corresponding model. Model
-details are not repeated in result rows.
+2. Evaluate the given program using a maximum budget of 10B CPU units and 14M
+   MEM units. Report either:
+
+   - The CEK result, as textual UPLC, and the measured budget.
+   - One of "evaluation failure", "out of budget" or "parse/decode error" on
+     error (matching one of those cases); and `null` as budget.
+
+3. Record the results in a single JSON report matching
+   [`schema.json`](schema.json). The report is limited to the observed outcome.
+   The deliberation of whether each test is a success is done by the platform
+   at build-time.

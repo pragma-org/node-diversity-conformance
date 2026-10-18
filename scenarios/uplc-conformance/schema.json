@@ -3,81 +3,43 @@
   "$id": "https://node-diversity-conformance.pragma.io/scenarios/uplc-conformance/schema.json",
   "title": "UPLC conformance scenario report",
   "type": "object",
-  "required": ["schema_version", "scenario", "generated_at", "protocol_version", "cost_models", "totals", "scenarios"],
+  "required": ["version", "scenario", "generated_at", "implementation", "scenarios"],
   "properties": {
-    "schema_version": { "const": "1" },
+    "version": { "const": "1" },
     "scenario": { "const": "uplc-conformance" },
     "generated_at": { "type": "string", "format": "date-time" },
-    "protocol_version": { "type": ["string", "number"] },
-    "cost_models": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/cost_model" }
-    },
-    "totals": {
+    "implementation": {
       "type": "object",
-      "required": ["total", "passed", "failed", "evaluation", "budget"],
-      "properties": {
-        "total": { "type": "integer", "minimum": 0 },
-        "passed": { "type": "integer", "minimum": 0 },
-        "failed": { "type": "integer", "minimum": 0 },
-        "evaluation": { "$ref": "#/$defs/dimension_totals" },
-        "budget": { "$ref": "#/$defs/dimension_totals" }
-      },
+      "required": ["name"],
+      "properties": { "name": { "type": "string" } },
       "additionalProperties": false
     },
     "scenarios": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "title", "group", "evaluation", "budget", "cost_model_id", "passed"],
+        "required": ["id", "title", "group", "plutus_version", "protocol_version", "evaluation", "budget"],
         "properties": {
           "id": { "type": "string" },
           "title": { "type": "string" },
           "group": { "type": "string" },
-          "plutus_version": { "type": ["string", "integer"] },
-          "protocol_version": { "type": ["string", "integer"] },
-          "cost_model_id": { "type": "string" },
-          "evaluation": { "$ref": "#/$defs/outcome" },
-          "budget": { "$ref": "#/$defs/outcome" },
-          "passed": { "type": "boolean" },
+          "plutus_version": { "type": ["string", "integer", "null"] },
+          "protocol_version": { "type": ["string", "integer", "null"] },
+          "evaluation": { "type": "string" },
+          "budget": {
+            "type": ["object", "null"],
+            "required": ["cpu", "mem"],
+            "properties": {
+              "cpu": { "type": "integer" },
+              "mem": { "type": "integer" }
+            },
+            "additionalProperties": false
+          },
           "error": { "type": "string" }
         },
         "additionalProperties": false
       }
     }
   },
-  "$defs": {
-    "dimension_totals": {
-      "type": "object",
-      "required": ["passed", "failed", "total"],
-      "properties": {
-        "passed": { "type": "integer", "minimum": 0 },
-        "failed": { "type": "integer", "minimum": 0 },
-        "total": { "type": "integer", "minimum": 0 }
-      },
-      "additionalProperties": false
-    },
-    "outcome": {
-      "type": "object",
-      "required": ["expected", "actual", "passed"],
-      "properties": {
-        "expected": {},
-        "actual": {},
-        "passed": { "type": ["boolean", "null"] }
-      },
-      "additionalProperties": false
-    },
-    "cost_model": {
-      "type": "object",
-      "required": ["id", "description"],
-      "properties": {
-        "id": { "type": "string" },
-        "description": { "type": "string" },
-        "plutus_version": { "type": ["string", "integer"] },
-        "protocol_version": { "type": ["string", "integer"] },
-        "source": { "type": "string" }
-      },
-      "additionalProperties": false
-    }
-  }
+  "additionalProperties": false
 }

@@ -8,6 +8,41 @@ function scenarioLabel(scenario) {
   return `(${scenario.id}) ${scenario.title}`;
 }
 
+function expectedValue(scenario) {
+  if (scenario.expected && typeof scenario.expected === 'object') {
+    if (scenario.expected.predicate) return scenario.expected.predicate;
+    return JSON.stringify(scenario.expected);
+  }
+  return scenario.expected || 'Pass';
+}
+
+function expectedResult(scenario) {
+  if (scenario.expected && typeof scenario.expected === 'object') {
+    if (scenario.expected.decoding_failure === true) return 'DecodingFailure';
+    if (scenario.expected.predicate) return scenario.expected.predicate;
+  }
+  return 'pass';
+}
+
+function resultPasses(scenario, result) {
+  return result === expectedResult(scenario);
+}
+
+function failureDetails(scenario, nodes, results) {
+  const failures = nodes
+    .map((node) => ({ node, result: results.get(node.id).get(scenario.id) }))
+    .filter(({ result }) => !resultPasses(scenario, result));
+  if (!failures.length) return '';
+  return `<div class="scenario-results">
+    <div class="scenario-result">
+      <span class="scenario-result-label">Expected</span><code>${esc(expectedValue(scenario))}</code>
+    </div>
+    ${failures.map(({ node, result }) => `<div class="scenario-result">
+      <span class="scenario-result-label">${esc(node.name)} actual</span><code class="failure-value">${esc(result || 'No result reported')}</code>
+    </div>`).join('')}
+  </div>`;
+}
+
 function resultMap(node) {
   return new Map((node.report.scenarios || []).map((result) => [shortId(result.id), result.result]));
 }
@@ -20,8 +55,9 @@ function heading(node, passed, total) {
 
 function fraction(entries, nodes, results) {
   return nodes.map((node) => {
-    const passed = entries.filter((entry) => results.get(node.id).get(entry.id) === 'pass').length;
-    return `<span class="group-fraction"><span class="score ${passed ? "pass" : "fail"}">${pct(ratio(passed, entries.length))}</span><span class="fraction-value">${fmt(passed)}/${fmt(entries.length)}</span></span>`;
+    const passed = entries.filter((entry) => resultPasses(entry, results.get(node.id).get(entry.id))).length;
+    const score = ratio(passed, entries.length);
+    return `<td class="group-count-cell"><span class="group-fraction"><span class="score ${score === 1 ? 'pass' : 'fail'}">${pct(score)}</span><span class="fraction-value">${fmt(passed)}/${fmt(entries.length)}</span></span></td>`;
   }).join('');
 }
 
@@ -31,7 +67,7 @@ function renderLedger(data) {
   const cases = data.definitions || [];
   const totals = loaded.map((node) => ({
     node,
-    passed: cases.filter((scenario) => results.get(node.id).get(scenario.id) === 'pass').length,
+    passed: cases.filter((scenario) => resultPasses(scenario, results.get(node.id).get(scenario.id))).length,
     total: cases.length,
   }));
   const cards = totals.map(({ node, passed, total }) => `
@@ -52,18 +88,19 @@ function renderLedger(data) {
     const body = entries.map((scenario, index) => {
       const cells = loaded.map((node) => {
         const result = results.get(node.id).get(scenario.id);
-        return `<td class="${result === 'pass' ? 'full' : 'partial'}">${result === 'pass' ? 'Pass' : 'Fail'}</td>`;
+        const passed = resultPasses(scenario, result);
+        return `<td class="${passed ? 'full' : 'partial'}">${passed ? 'Pass' : 'Fail'}</td>`;
       }).join('');
       const detailId = `scenario-${esc(scenario.id)}`;
       const branch = index === entries.length - 1 ? ' data-last="true"' : '';
       return `<tr class="scenario-row" data-parent="${esc(category)}"${branch} hidden><td><button type="button" class="scenario-toggle" data-detail="${detailId}" aria-expanded="false">${esc(scenarioLabel(scenario))}</button></td>${cells}</tr>
-        <tr id="${detailId}" class="scenario-detail" data-parent="${esc(category)}" hidden><td colspan="${loaded.length + 1}"><div class="prose">${esc(scenario.description)}</div></td></tr>`;
+        <tr id="${detailId}" class="scenario-detail" data-parent="${esc(category)}" hidden><td colspan="${loaded.length + 1}"><div class="prose">${esc(scenario.description)}${failureDetails(scenario, loaded, results)}</div></td></tr>`;
     }).join('');
-    return `<tr class="group-header" data-group="${esc(category)}"><td colspan="${loaded.length + 1}">
+    return `<tr class="group-header" data-group="${esc(category)}"><td>
       <button type="button" class="button button-plain group-toggle" aria-expanded="false">
-        <span>${esc(groupLabel(category))}</span><span class="group-count">${fractions}</span>
+        <span class="group-toggle-marker" aria-hidden="true"></span><span class="group-label">${esc(groupLabel(category))}</span>
       </button>
-    </td></tr>${body}`;
+    </td>${fractions}</tr>${body}`;
   }).join('');
   $('table-body').innerHTML = rows || `<tr class="empty-row"><td colspan="${loaded.length + 1}">No scenarios in the reports.</td></tr>`;
   activateGroupToggles();

@@ -1,4 +1,9 @@
 {
+  "version": "1",
+  "scenario": "cbor-decoding",
+  "implementation": {
+    "name": "cardano-node"
+  },
   "corpus": "conway-123-100",
   "protocol_version": "11.0",
   "successful": true,

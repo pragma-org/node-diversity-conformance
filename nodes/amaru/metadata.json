@@ -3,24 +3,12 @@
   "name": "Amaru",
   "language": "Rust",
   "repository": "https://github.com/pragma-org/amaru",
-  "website": null,
+  "website": "https://amaru.global",
   "color": "#30dfa5",
   "reports": {
-    "cbor-decoding": {
-      "github_releases": "pragma-org/amaru",
-      "asset": "amaru-*-cbor-conformance.json"
-    },
-    "ledger-rules": {
-      "github_releases": "pragma-org/amaru",
-      "asset": "amaru-*-ledger-rules.json"
-    },
-    "uplc-conformance": {
-      "github_releases": "pragma-org/amaru",
-      "asset": "amaru-*-uplc-conformance.json"
-    },
-    "uplc-turbo": {
-      "github_releases": "pragma-org/amaru",
-      "asset": "amaru-*-uplc-turbo.json"
-    }
+    "cbor-decoding": "https://raw.githubusercontent.com/pragma-org/node-diversity-conformance/main/scenarios/cbor-decoding/preview/amaru.json",
+    "uplc-turbo": "https://raw.githubusercontent.com/pragma-org/node-diversity-conformance/main/scenarios/uplc-turbo/preview/amaru.json.zst",
+    "uplc-conformance": "https://raw.githubusercontent.com/pragma-org/node-diversity-conformance/main/scenarios/uplc-conformance/preview/amaru.json.zst",
+    "ledger-rules": "https://raw.githubusercontent.com/pragma-org/node-diversity-conformance/main/scenarios/ledger-rules/preview/amaru.json.zst"
   }
 }
