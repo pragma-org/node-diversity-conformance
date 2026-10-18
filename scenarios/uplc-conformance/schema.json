@@ -3,13 +3,11 @@
   "$id": "https://node-diversity-conformance.pragma.io/scenarios/uplc-conformance/schema.json",
   "title": "UPLC conformance scenario report",
   "type": "object",
-  "required": ["schema_version", "scenario", "generated_at"],
+  "required": ["schema_version", "scenario", "generated_at", "protocol_version", "cost_models", "totals", "scenarios"],
   "properties": {
     "schema_version": { "const": "1" },
     "scenario": { "const": "uplc-conformance" },
     "generated_at": { "type": "string", "format": "date-time" },
-    "implementation": { "type": "object" },
-    "error": { "type": "string", "minLength": 1 },
     "protocol_version": { "type": ["string", "number"] },
     "cost_models": {
       "type": "array",
@@ -48,23 +46,6 @@
       }
     }
   },
-  "oneOf": [
-    {
-      "required": ["implementation", "error"],
-      "not": {
-        "anyOf": [
-          { "required": ["protocol_version"] },
-          { "required": ["cost_models"] },
-          { "required": ["totals"] },
-          { "required": ["scenarios"] }
-        ]
-      }
-    },
-    {
-      "required": ["protocol_version", "cost_models", "totals", "scenarios"],
-      "not": { "required": ["error"] }
-    }
-  ],
   "$defs": {
     "dimension_totals": {
       "type": "object",

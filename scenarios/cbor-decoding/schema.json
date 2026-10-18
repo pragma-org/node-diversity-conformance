@@ -3,7 +3,7 @@
   "$id": "https://node-diversity-conformance.pragma.io/scenarios/cbor-decoding/schema.json",
   "title": "CBOR decoding conformance report",
   "type": "object",
-  "required": ["schema_version", "scenario", "generated_at"],
+  "required": ["schema_version", "scenario", "generated_at", "corpus", "protocol_version", "totals", "rules"],
   "properties": {
     "schema_version": { "const": "1" },
     "scenario": { "const": "cbor-decoding" },
@@ -13,16 +13,6 @@
         { "type": "integer", "minimum": 0 }
       ]
     },
-    "implementation": {
-      "type": "object",
-      "required": ["name"],
-      "properties": {
-        "name": { "type": "string" },
-        "language": { "type": "string" }
-      },
-      "additionalProperties": false
-    },
-    "error": { "type": "string", "minLength": 1 },
     "corpus": { "type": "string" },
     "protocol_version": { "type": ["string", "number"] },
     "totals": {
@@ -35,24 +25,6 @@
     },
     "failures": { "type": "array", "items": { "type": "object" } }
   },
-  "oneOf": [
-    {
-      "required": ["implementation", "error"],
-      "not": {
-        "anyOf": [
-          { "required": ["corpus"] },
-          { "required": ["protocol_version"] },
-          { "required": ["totals"] },
-          { "required": ["rules"] },
-          { "required": ["failures"] }
-        ]
-      }
-    },
-    {
-      "required": ["corpus", "protocol_version", "totals", "rules"],
-      "not": { "required": ["error"] }
-    }
-  ],
   "$defs": {
     "outcome": {
       "type": "object",

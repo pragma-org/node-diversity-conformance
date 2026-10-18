@@ -106,10 +106,6 @@ Before publishing a report, validate it against the schema named by its scenario
 same weight: a node receives one quarter of the overall score for each of the four scenarios. An
 unavailable scenario contributes zero to the total and is shown as `-` on the node card.
 
-If report generation cannot produce results, a producer may publish an error-only report containing
-the common envelope, `implementation`, and a non-empty `error` string. The builder displays the cause
-and treats that scenario as unavailable instead of scoring an empty report.
-
 > [!TIP]
 > For local development, place reports under `scenarios/<scenario-id>/preview/<node-id>.json` and build with
 > `python3 scripts/build.py --preview`. The preview directory is intentionally ignored by CI.

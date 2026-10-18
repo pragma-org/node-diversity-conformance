@@ -9,18 +9,6 @@
     "cbor-decoding": {
       "github_releases": "blinklabs-io/dingo",
       "asset": "dingo-*-cbor-conformance.json"
-    },
-    "ledger-rules": {
-      "github_releases": "blinklabs-io/dingo",
-      "asset": "dingo-*-ledger-rules.json"
-    },
-    "uplc-conformance": {
-      "github_releases": "blinklabs-io/dingo",
-      "asset": "dingo-*-uplc-conformance.json"
-    },
-    "uplc-turbo": {
-      "github_releases": "blinklabs-io/dingo",
-      "asset": "dingo-*-uplc-turbo.json"
     }
   }
 }
