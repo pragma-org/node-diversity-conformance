@@ -2,13 +2,14 @@
 
 function dimensionSummary(report, expectations, dimension) {
   if (!report) return '<span class="summary-measure"><span class="summary-score unknown">—</span><span class="summary-fraction">—</span></span>';
-  const outcomes = expectations
-    .map((expected) => outcome(report.scenarios?.find((scenario) => scenarioKey(scenario) === scenarioKey(expected)), expected, dimension))
-    .filter((value) => value !== null);
-  const passed = outcomes.filter(Boolean).length;
-  const score = ratio(passed, outcomes.length);
+  const counts = dimensionCounts(report, expectations, dimension);
+  const total = counts.pass + counts.fail + counts.missing;
+  const score = ratio(counts.pass, total);
   const status = score === null ? 'unknown' : score === 1 ? 'full' : 'partial';
-  return `<span class="summary-measure"><span class="summary-score ${status}">${pct(score)}</span><span class="summary-fraction">${fmt(passed)} / ${fmt(outcomes.length)}</span></span>`;
+  return `<div class="dimension-result">
+    <span class="summary-measure"><span class="summary-score ${status}">${pct(score)}</span><span class="summary-fraction">${fmt(counts.pass)} / ${fmt(total)}</span></span>
+    ${summaryTable(counts)}
+  </div>`;
 }
 
 function budgetValue(value) {
@@ -32,22 +33,47 @@ function normalizeEvaluation(value) {
     .trim();
 }
 
-function outcome(actual, expected, dimension) {
+function outcomeStatus(actual, expected, dimension) {
   if (!expected) return null;
   if (dimension === 'budget' && expected.budget === null) return null;
-  if (!actual) return false;
-  if (actual.plutus_version !== expected.plutus_version || actual.protocol_version !== expected.protocol_version) return false;
-  if (dimension === 'evaluation') return normalizeEvaluation(actual.evaluation) === normalizeEvaluation(expected.evaluation);
+  if (actual === undefined) return 'missing';
+  if (actual === null) return 'fail';
+  if (actual.plutus_version !== expected.plutus_version || actual.protocol_version !== expected.protocol_version) return 'fail';
+  if (dimension === 'evaluation') {
+    return normalizeEvaluation(actual.evaluation) === normalizeEvaluation(expected.evaluation) ? 'pass' : 'fail';
+  }
   const actualBudget = budgetValue(actual.budget);
-  return actualBudget !== null && actualBudget.cpu === expected.budget.cpu && actualBudget.mem === expected.budget.mem;
+  return actualBudget !== null && actualBudget.cpu === expected.budget.cpu && actualBudget.mem === expected.budget.mem ? 'pass' : 'fail';
 }
 
-function dimensionCell(actual, expected, dimension, reportAvailable) {
-  if (!expected || (dimension === 'budget' && expected.budget === null) || !reportAvailable) {
+function outcome(actual, expected, dimension) {
+  const status = outcomeStatus(actual, expected, dimension);
+  return status === null ? null : status === 'pass';
+}
+
+function dimensionCounts(report, expectations, dimension) {
+  const counts = { pass: 0, fail: 0, missing: 0 };
+  expectations.forEach((expected) => {
+    const actual = actualFor(report, expected);
+    const status = outcomeStatus(actual, expected, dimension);
+    if (status) counts[status] += 1;
+  });
+  return counts;
+}
+
+function summaryTable({ pass, fail, missing }) {
+  return `<table class="summary-breakdown" aria-label="Scenario result counts">
+    <thead><tr><th>Pass</th><th>Fail</th><th>Miss</th></tr></thead>
+    <tbody><tr><td class="summary-count pass">${fmt(pass)}</td><td class="summary-count fail">${fmt(fail)}</td><td class="summary-count missing">${fmt(missing)}</td></tr></tbody>
+  </table>`;
+}
+
+function dimensionCell(actual, expected, dimension) {
+  if (!expected || (dimension === 'budget' && expected.budget === null)) {
     return '<span class="dimension-status unknown">—</span>';
   }
-  const passed = outcome(actual, expected, dimension);
-  return `<span class="dimension-status ${passed ? 'full' : 'partial'}">${passed ? 'PASS' : 'FAIL'}</span>`;
+  const status = outcomeStatus(actual, expected, dimension);
+  return `<span class="dimension-status ${status === 'pass' ? 'full' : status === 'missing' ? 'missing' : 'partial'}">${status.toUpperCase()}</span>`;
 }
 
 function mismatchValue(value, dimension) {
@@ -59,12 +85,12 @@ function mismatchValue(value, dimension) {
 }
 
 function mismatchRows(node, expected, actual) {
-  if (!actual) {
+  if (actual === undefined) {
     const rows = [
-      { label: `${node.name} · Evaluation`, expected: expected.evaluation, actual: 'not reported' },
+      { label: `${node.name} · Evaluation`, expected: expected.evaluation, actual: 'missing', missing: true },
     ];
     if (expected.budget !== null && expected.budget !== undefined) {
-      rows.push({ label: `${node.name} · Budget`, expected: expected.budget, actual: 'not reported', dimension: 'budget' });
+      rows.push({ label: `${node.name} · Budget`, expected: expected.budget, actual: 'missing', dimension: 'budget', missing: true });
     }
     return rows;
   }
@@ -107,10 +133,10 @@ function scenarioFailureDetails(item, nodes, byKey, expectations) {
     .flatMap((node) => mismatchRows(node, expected, byKey(node, item)));
   if (!mismatches.length) return '';
 
-  return `<div class="scenario-results">${mismatches.map(({ label, expected: expectedValue, actual, dimension }) => `
+  return `<div class="scenario-results">${mismatches.map(({ label, expected: expectedValue, actual, dimension, missing }) => `
     <div class="scenario-result">
       <span class="scenario-result-label">${esc(label)} · expected</span><code>${esc(mismatchValue(expectedValue, dimension))}</code>
-      <span class="scenario-result-label failure-value">${esc(label)} · actual</span><code class="failure-value">${esc(mismatchValue(actual, dimension))}</code>
+      <span class="scenario-result-label ${missing ? 'missing-value' : 'failure-value'}">${esc(label)} · actual</span><code class="${missing ? 'missing-value' : 'failure-value'}">${esc(mismatchValue(actual, dimension))}</code>
     </div>`).join('')}</div>`;
 }
 
@@ -152,6 +178,11 @@ function scenarioKey(scenario) {
   return `${scenario.id}\u0000${scenario.plutus_version}\u0000${scenario.protocol_version}`;
 }
 
+function actualFor(report, expected) {
+  return report.scenarios?.find((scenario) => scenarioKey(scenario) === scenarioKey(expected))
+    || report.scenarios?.find((scenario) => scenario.id === expected.id);
+}
+
 function dimensionFraction(entries, node, byKey, dimension, expectations) {
   const outcomes = entries
     .map((entry) => outcome(byKey(node, entry), expectations.get(scenarioKey(entry)), dimension))
@@ -190,8 +221,8 @@ function treeRows(root, nodes, byKey, expectations) {
           const scenario = byKey(node, item);
           const expected = expectations.get(scenarioKey(item));
           return `<td class="dimension-cell${scenario ? '' : ' missing'}">
-            <div>${dimensionCell(scenario, expected, 'evaluation', Boolean(node.report))}</div>
-            <div>${dimensionCell(scenario, expected, 'budget', Boolean(node.report))}</div>
+            <div>${dimensionCell(scenario, expected, 'evaluation')}</div>
+            <div>${dimensionCell(scenario, expected, 'budget')}</div>
           </td>`;
         }).join('');
         rows.push(`<tr id="${detailId}-row" class="scenario-row" data-parent="${esc(child.key)}" style="--group-depth: ${depth}"${item === child.items[child.items.length - 1] ? ' data-last="true"' : ''} hidden><td>${label}</td><td class="dimension-labels"><div>Evaluation</div><div>Budget</div></td>${cells}</tr>`);
@@ -207,9 +238,14 @@ function treeRows(root, nodes, byKey, expectations) {
 
 function scenarioFailures(report, expectations) {
   if (!report) return null;
-  return expectations.filter((expected) =>
-    outcome(report.scenarios?.find((scenario) => scenarioKey(scenario) === scenarioKey(expected)), expected, 'evaluation') === false ||
-    outcome(report.scenarios?.find((scenario) => scenarioKey(scenario) === scenarioKey(expected)), expected, 'budget') === false).length;
+  return expectations.reduce((counts, expected) => {
+    const actual = actualFor(report, expected);
+    const evaluation = outcomeStatus(actual, expected, 'evaluation');
+    const budget = outcomeStatus(actual, expected, 'budget');
+    if (evaluation === 'fail' || budget === 'fail') counts.fail += 1;
+    else if (evaluation === 'missing' || budget === 'missing') counts.missing += 1;
+    return counts;
+  }, { fail: 0, missing: 0 });
 }
 
 function nodeHeading(node) {
@@ -267,12 +303,12 @@ function renderUplc(data) {
   const expectations = new Map(expectationList.map((expected) => [scenarioKey(expected), expected]));
   const reported = nodes.filter((node) => node.report);
   const cards = reported.map((node) => {
-    const failures = scenarioFailures(node.report, expectationList);
-    const complete = expectationList.length > 0 && failures === 0;
+    const counts = scenarioFailures(node.report, expectationList);
+    const complete = expectationList.length > 0 && counts.fail === 0 && counts.missing === 0;
     return `<div class="panel card"><div class="icon-prefix node-name">${nodeDot(node)}${esc(node.name)}</div>
-      <div class="status ${complete ? 'pass' : 'fail'}">${complete ? 'Fully conformant' : `${fmt(failures)} failures`}</div>
-      <div class="key-values dimension-summary"><div class="key-value"><strong>Evaluation</strong><span>${dimensionSummary(node.report, expectationList, 'evaluation')}</span></div>
-      <div class="key-value"><strong>Budget</strong><span>${dimensionSummary(node.report, expectationList, 'budget')}</span></div></div>
+      <div class="status ${complete ? 'pass' : 'fail'}">${complete ? 'Fully conformant' : `${fmt(counts.fail)} failures · ${fmt(counts.missing)} missing`}</div>
+      <div class="key-values dimension-summary"><div class="key-value"><strong>Evaluation</strong><div>${dimensionSummary(node.report, expectationList, 'evaluation')}</div></div>
+      <div class="key-value"><strong>Budget</strong><div>${dimensionSummary(node.report, expectationList, 'budget')}</div></div></div>
     </div>`;
   });
   const unavailable = nodes.filter((node) => !node.report).map((node) => `

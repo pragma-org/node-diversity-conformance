@@ -25,7 +25,12 @@ function expectedResult(scenario) {
 }
 
 function resultPasses(scenario, result) {
-  return result === expectedResult(scenario);
+  return resultStatus(scenario, result) === 'pass';
+}
+
+function resultStatus(scenario, result) {
+  if (result === undefined) return 'missing';
+  return result === expectedResult(scenario) ? 'pass' : 'fail';
 }
 
 function failureDetails(scenario, nodes, results) {
@@ -37,9 +42,12 @@ function failureDetails(scenario, nodes, results) {
     <div class="scenario-result">
       <span class="scenario-result-label">Expected</span><code>${esc(expectedValue(scenario))}</code>
     </div>
-    ${failures.map(({ node, result }) => `<div class="scenario-result">
-      <span class="scenario-result-label">${esc(node.name)} actual</span><code class="failure-value">${esc(result || 'No result reported')}</code>
-    </div>`).join('')}
+    ${failures.map(({ node, result }) => {
+      const missing = resultStatus(scenario, result) === 'missing';
+      return `<div class="scenario-result">
+      <span class="scenario-result-label">${esc(node.name)} actual</span><code class="${missing ? 'missing-value' : 'failure-value'}">${esc(missing ? 'missing' : result)}</code>
+    </div>`;
+    }).join('')}
   </div>`;
 }
 
@@ -61,19 +69,30 @@ function fraction(entries, nodes, results) {
   }).join('');
 }
 
+function summaryTable({ passed, failed, missing }) {
+  return `<table class="summary-breakdown" aria-label="Scenario result counts">
+    <thead><tr><th>Pass</th><th>Fail</th><th>Miss</th></tr></thead>
+    <tbody><tr><td class="summary-count pass">${fmt(passed)}</td><td class="summary-count fail">${fmt(failed)}</td><td class="summary-count missing">${fmt(missing)}</td></tr></tbody>
+  </table>`;
+}
+
 function renderLedger(data) {
   const loaded = data.nodes.filter((node) => node.report);
   const results = new Map(loaded.map((node) => [node.id, resultMap(node)]));
   const cases = data.definitions || [];
   const totals = loaded.map((node) => ({
     node,
-    passed: cases.filter((scenario) => resultPasses(scenario, results.get(node.id).get(scenario.id))).length,
+    counts: cases.reduce((counts, scenario) => {
+      counts[resultStatus(scenario, results.get(node.id).get(scenario.id))] += 1;
+      return counts;
+    }, { pass: 0, fail: 0, missing: 0 }),
     total: cases.length,
   }));
-  const cards = totals.map(({ node, passed, total }) => `
+  const cards = totals.map(({ node, counts, total }) => `
     <div class="panel card"><div class="icon-prefix node-name">${nodeDot(node)}${esc(node.name)}</div>
-      <div class="status ${passed === total ? 'pass' : 'fail'}">${passed === total ? 'Fully conformant' : `${fmt(total - passed)} failures`}</div>
-      <div><span class="score ${passed === total ? 'pass' : 'fail'}">${pct(ratio(passed, total))}</span><span class="ratio">${fmt(passed)} / ${fmt(total)} scenarios</span></div>
+      <div class="status ${counts.fail === 0 && counts.missing === 0 ? 'pass' : 'fail'}">${counts.fail === 0 && counts.missing === 0 ? 'Fully conformant' : `${fmt(counts.fail)} failures · ${fmt(counts.missing)} missing`}</div>
+      <div><span class="score ${counts.fail === 0 && counts.missing === 0 ? 'pass' : 'fail'}">${pct(ratio(counts.pass, total))}</span><span class="ratio">${fmt(counts.pass)} / ${fmt(total)} scenarios</span></div>
+      ${summaryTable({ passed: counts.pass, failed: counts.fail, missing: counts.missing })}
     </div>`);
   const unavailable = data.nodes.filter((node) => !node.report).map((node) => `
     <div class="panel card"><div class="icon-prefix node-name">${nodeDot(node)}${esc(node.name)}</div>
@@ -81,15 +100,16 @@ function renderLedger(data) {
     </div>`);
   $('summary').innerHTML = cards.concat(unavailable).join('') || '<div class="loading">No nodes configured.</div>';
 
-  $('table-head').innerHTML = `<tr><th>Scenario</th>${totals.map(({ node, passed, total }) => heading(node, passed, total)).join('')}</tr>`;
+  $('table-columns').innerHTML = `<col class="table-scenario">${loaded.map(() => '<col class="table-node">').join('')}`;
+  $('table-head').innerHTML = `<tr><th>Scenario</th>${totals.map(({ node, counts, total }) => heading(node, counts.pass, total)).join('')}</tr>`;
 
   const rows = grouped(cases, (scenario) => scenario.category).map(([category, entries]) => {
     const fractions = fraction(entries, loaded, results);
     const body = entries.map((scenario, index) => {
       const cells = loaded.map((node) => {
         const result = results.get(node.id).get(scenario.id);
-        const passed = resultPasses(scenario, result);
-        return `<td class="${passed ? 'full' : 'partial'}">${passed ? 'Pass' : 'Fail'}</td>`;
+        const status = resultStatus(scenario, result);
+        return `<td class="${status === 'pass' ? 'full' : status === 'missing' ? 'missing' : 'partial'}">${status === 'pass' ? 'Pass' : status === 'missing' ? 'Missing' : 'Fail'}</td>`;
       }).join('');
       const detailId = `scenario-${esc(scenario.id)}`;
       const branch = index === entries.length - 1 ? ' data-last="true"' : '';

@@ -20,7 +20,7 @@
     <div class="section-title">Method</div>
     <div class="prose">
       <p>Each implementation applies the same versioned raw-CBOR transaction fixtures against the declared era history, protocol parameters, network, initial state, and chain point.</p>
-      <p>Fixtures marked <strong>pass</strong> must be accepted; fixtures marked <strong>fail</strong> must be rejected with the expected validation predicate. A missing result is counted as a failure, while unrecognized results are ignored.</p>
+      <p>Fixtures marked <strong>pass</strong> must be accepted; fixtures marked <strong>fail</strong> must be rejected with the expected validation predicate. Missing results are shown separately but count as failures in the overall score, while unrecognized results are ignored.</p>
     </div>
   </section>
 
@@ -32,7 +32,8 @@
   <section class="section">
     <div class="section-title">Per-scenario results <em>grouped by rule category</em></div>
     <div class="table-wrap">
-      <table>
+      <table class="ledger-table">
+        <colgroup id="table-columns"></colgroup>
         <thead id="table-head"></thead>
         <tbody id="table-body"></tbody>
       </table>
