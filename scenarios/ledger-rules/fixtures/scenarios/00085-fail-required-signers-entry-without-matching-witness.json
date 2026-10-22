@@ -1,6 +1,6 @@
 {
   "title": "required_signers entry without matching witness",
-  "description": "Body declares a required_signers entry whose key is not in the witness set. The consumed input is locked to the dev key and the witness set carries a valid signature for it, so the input-vkey requirement is satisfied \u2014 required_signers is the only missing key. Exercises the body.required_signers contribution to required-keys in isolation, distinct from the input-driven path covered by fixture 0.",
+  "description": "Body declares a required_signers entry whose key is not in the witness set. The consumed input is locked to the dev key and the witness set carries a valid signature for it, so the input-vkey requirement is satisfied — required_signers is the only missing key. Exercises the body.required_signers contribution to required-keys in isolation, distinct from the input-driven path covered by fixture 0.",
   "category": "witnesses",
   "network": "preprod",
   "era_history": {
@@ -15,13 +15,7 @@
         "input": "825820aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00",
         "output": "a200581d6093c191b1094746961f6f00fba27f3d8eff6a66490baf806d4e179fd8011a004c4b40"
       }
-    ],
-    "pools": [],
-    "accounts": [],
-    "dreps": [],
-    "governance_activity": {
-      "consecutive_dormant_epochs": 0
-    }
+    ]
   },
   "point": {
     "slot": 0,

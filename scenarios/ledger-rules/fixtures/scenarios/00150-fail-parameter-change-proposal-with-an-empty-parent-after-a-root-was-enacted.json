@@ -16,18 +16,11 @@
         "output": "bf00581d6093c191b1094746961f6f00fba27f3d8eff6a66490baf806d4e179fd8011b0000001748c33340ff"
       }
     ],
-    "pools": [],
-    "accounts": [],
-    "dreps": [],
-    "proposals": [],
     "proposals_roots": {
       "protocol_parameters": {
         "transaction_id": "099fe48ea596b03ebc3b978710500364d295899b10c02a3fd79826db31363329",
         "proposal_index": 0
       }
-    },
-    "governance_activity": {
-      "consecutive_dormant_epochs": 0
     }
   },
   "point": {

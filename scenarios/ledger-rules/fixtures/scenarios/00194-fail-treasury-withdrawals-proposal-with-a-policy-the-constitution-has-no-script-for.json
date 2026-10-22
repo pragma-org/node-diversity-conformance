@@ -27,11 +27,7 @@
         "deposit": 2000000,
         "rewards": 0
       }
-    ],
-    "governance_activity": {
-      "consecutive_dormant_epochs": 0
-    },
-    "guardrail_script": null
+    ]
   },
   "point": {
     "slot": 0,

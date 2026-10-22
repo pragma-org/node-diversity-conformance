@@ -19,7 +19,6 @@
     "committee": [
       {
         "cold_credential": "8200581cecc3093b061a9ed426cd9956161fc48d4ed1ac58dc4aaed7e1ce1830",
-        "status": null,
         "valid_until": 200
       }
     ],

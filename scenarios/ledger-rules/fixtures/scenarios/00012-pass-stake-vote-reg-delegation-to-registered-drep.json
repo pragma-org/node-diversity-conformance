@@ -19,7 +19,6 @@
     "pools": [
       "dddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
     ],
-    "accounts": [],
     "dreps": [
       {
         "credential": "8200581ccdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
@@ -33,10 +32,7 @@
         },
         "valid_until": 1000
       }
-    ],
-    "governance_activity": {
-      "consecutive_dormant_epochs": 0
-    }
+    ]
   },
   "point": {
     "slot": 0,

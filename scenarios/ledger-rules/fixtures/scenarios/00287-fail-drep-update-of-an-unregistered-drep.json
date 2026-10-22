@@ -15,9 +15,7 @@
         "input": "825820fb1498f8ee0bcd30e186c2cdbaff7220ad5bfb64f5c19cda2f203e34129fcb8700",
         "output": "a200581d6093c191b1094746961f6f00fba27f3d8eff6a66490baf806d4e179fd8011a004c4b40"
       }
-    ],
-    "accounts": [],
-    "dreps": []
+    ]
   },
   "point": {
     "slot": 0,

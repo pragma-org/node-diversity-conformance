@@ -20,7 +20,6 @@
       {
         "credential": "8200581c93c191b1094746961f6f00fba27f3d8eff6a66490baf806d4e179fd8",
         "deposit": 2000000,
-        "rewards": 0,
         "drep": {
           "id": "8102",
           "delegated_at": {
@@ -30,12 +29,10 @@
             },
             "certificate_index": 0
           }
-        }
+        },
+        "rewards": 0
       }
-    ],
-    "governance_activity": {
-      "consecutive_dormant_epochs": 0
-    }
+    ]
   },
   "point": {
     "slot": 0,

@@ -23,13 +23,7 @@
         "input": "825820a2d6b0f4c8e2a6d0b4f8c2e6a0d4b8f2c6e0a4d8b2f6c0e4a8d2b6f0c4e8a2d600",
         "output": "a300581d6093c191b1094746961f6f00fba27f3d8eff6a66490baf806d4e179fd8011a001e848003d8184a82024746010000222499"
       }
-    ],
-    "pools": [],
-    "accounts": [],
-    "dreps": [],
-    "governance_activity": {
-      "consecutive_dormant_epochs": 0
-    }
+    ]
   },
   "point": {
     "slot": 0,

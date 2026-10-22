@@ -28,9 +28,6 @@
         "rewards": 0
       }
     ],
-    "governance_activity": {
-      "consecutive_dormant_epochs": 0
-    },
     "guardrail_script": "d441227553a0f1a965fee7d60a0f724b368dd1bddbc208730fccebcf"
   },
   "point": {

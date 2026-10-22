@@ -15,10 +15,7 @@
         "input": "825820a1c4425c08922d444e4fad7ad6e73796ac118e27165f0688ac049858938ed02800",
         "output": "bf00581d70d441227553a0f1a965fee7d60a0f724b368dd1bddbc208730fccebcf011a004c4b40ff"
       }
-    ],
-    "governance_activity": {
-      "consecutive_dormant_epochs": 0
-    }
+    ]
   },
   "point": {
     "slot": 0,
