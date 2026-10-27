@@ -45,6 +45,7 @@
               { "const": "FeeTooSmallUTxO" },
               { "const": "GovActionsDoNotExist" },
               { "const": "IncorrectDepositDELEG" },
+              { "const": "IncorrectDepositDRep" },
               { "const": "IncorrectTotalCollateralField" },
               { "const": "InputSetEmptyUTxO" },
               { "const": "InsufficientCollateral" },

@@ -1,6 +1,6 @@
 {
   "title": "current_treasury_value disagrees with ledger treasury",
-  "description": "The transaction body carries a `current_treasury_value` that differes from the treasury defined in `initialState`.",
+  "description": "The transaction body carries a `current_treasury_value` that differs from the treasury defined in `initial_state`.",
   "category": "treasury",
   "network": "preprod",
   "era_history": {
