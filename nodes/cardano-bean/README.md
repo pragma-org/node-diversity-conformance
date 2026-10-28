@@ -1,0 +1,1 @@
+Bean (`cardano-bean`) is zw3rk's Cardano full node implementation in Java, built with LLM tools from the published specifications, CDDL grammars, and genesis files without ever looking at its source code. It implements the Ouroboros networking and consensus protocols, full ledger validation across all eras, Mithril client and server bootstrap, and a native CEK Plutus evaluator.

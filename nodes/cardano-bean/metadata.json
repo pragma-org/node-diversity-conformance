@@ -1,0 +1,13 @@
+{
+  "id": "cardano-bean",
+  "name": "Bean",
+  "language": "Java",
+  "website": "https://bean.zw3rk.com",
+  "color": "#D9772B",
+  "reports": {
+    "cbor-decoding": "https://bean.zw3rk.com/reports/cbor-decoding.json",
+    "ledger-rules": "https://bean.zw3rk.com/reports/ledger-rules.json",
+    "uplc-conformance": "https://bean.zw3rk.com/reports/uplc-conformance.json",
+    "uplc-turbo": "https://bean.zw3rk.com/reports/uplc-turbo.json.zst"
+  }
+}
