@@ -13,12 +13,12 @@ on. At the moment, the following scenarios are available:
 ### Functional Tests
 
 - [CBOR decoding conformance](./scenarios/cbor-decoding)
-- [UPLC conformance, including implementation-specific regression vectors](./scenarios/uplc-conformance)
+- [UPLC functional tests, including implementation-specific regression vectors](./scenarios/uplc-conformance)
 - [ledger transaction-rule scenarios](./scenarios/ledger-rules)
 
 ### Non-Functional Tests
 
-- [UPLC turbo benchmarks](./scenarios/uplc-turbo)
+- [UPLC benchmarks](./scenarios/uplc-turbo)
 
 ---
 
@@ -61,6 +61,20 @@ Reports can be provided as a direct download URL, which must be public and
 stable, and must serve the latest JSON document for that scenario. The report
 may be compressed with `.gzip`, `.gz`, or `.zst`; the builder detects the
 suffix and decompresses it before validating the JSON.
+
+#### One report per era
+
+A scenario that has several eras, such as `cbor-decoding`, takes a source for each era. Give a mapping from the era
+to a source. Each source is a direct link or a GitHub release:
+
+```json
+"reports": {
+  "cbor-decoding": {
+    "conway": "https://example.org/my-node/cbor-conway.json",
+    "dijkstra": "https://example.org/my-node/cbor-dijkstra.json"
+  }
+}
+```
 
 #### Github release
 
@@ -107,5 +121,5 @@ same weight: a node receives one quarter of the overall score for each of the fo
 unavailable scenario contributes zero to the total and is shown as `-` on the node card.
 
 > [!TIP]
-> For local development, place reports under `scenarios/<scenario-id>/preview/<node-id>.json` and build with
+> For local development, place reports under `scenarios/<scenario-id>/preview/<node-id>.json` (`<node-id>-<era>.json` for a scenario with eras) and build with
 > `python3 scripts/build.py --preview`. The preview directory is intentionally ignored by CI.

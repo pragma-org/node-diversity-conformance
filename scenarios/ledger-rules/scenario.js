@@ -51,21 +51,28 @@ function failureDetails(scenario, nodes, results) {
   </div>`;
 }
 
+// The same figure as on the cards: a score is never rounded up to 100%.
+function pctText(value) {
+  return value === null ? '—' : `${pctValue(value)}%`;
+}
+
 function resultMap(node) {
   return new Map((node.report.scenarios || []).map((result) => [shortId(result.id), result.result]));
 }
 
-function heading(node, passed, total) {
-  const score = ratio(passed, total);
-  return `<th><div class="icon-prefix node-name">${nodeDot(node)}${esc(node.name)}</div>
-    <div class="score ${score === 1 ? 'full' : 'partial'}">${pct(score)}<span class="cnt">${fmt(passed)}/${fmt(total)}</span></div></th>`;
+// Green when everything passes, amber when the score only lacks missing results, red when a scenario fails.
+function scoreClass({ fail, missing }) {
+  if (fail > 0) return 'fail';
+  return missing > 0 ? 'missing' : 'pass';
 }
 
 function fraction(entries, nodes, results) {
   return nodes.map((node) => {
-    const passed = entries.filter((entry) => resultPasses(entry, results.get(node.id).get(entry.id))).length;
+    const statuses = entries.map((entry) => resultStatus(entry, results.get(node.id).get(entry.id)));
+    const passed = statuses.filter((status) => status === 'pass').length;
+    const counts = { fail: statuses.filter((status) => status === 'fail').length, missing: statuses.filter((status) => status === 'missing').length };
     const score = ratio(passed, entries.length);
-    return `<td class="group-count-cell"><span class="group-fraction"><span class="score ${score === 1 ? 'pass' : 'fail'}">${pct(score)}</span><span class="fraction-value">${fmt(passed)}/${fmt(entries.length)}</span></span></td>`;
+    return `<td class="group-count-cell"><span class="group-fraction"><span class="score ${scoreClass(counts)}">${pctText(score)}</span><span class="fraction-value">${fmt(passed)}/${fmt(entries.length)}</span></span></td>`;
   }).join('');
 }
 
@@ -88,20 +95,42 @@ function renderLedger(data) {
     }, { pass: 0, fail: 0, missing: 0 }),
     total: cases.length,
   }));
-  const cards = totals.map(({ node, counts, total }) => `
-    <div class="panel card"><div class="icon-prefix node-name">${nodeDot(node)}${esc(node.name)}</div>
-      <div class="status ${counts.fail === 0 && counts.missing === 0 ? 'pass' : 'fail'}">${counts.fail === 0 && counts.missing === 0 ? 'Fully conformant' : `${fmt(counts.fail)} failures · ${fmt(counts.missing)} missing`}</div>
-      <div><span class="score ${counts.fail === 0 && counts.missing === 0 ? 'pass' : 'fail'}">${pct(ratio(counts.pass, total))}</span><span class="ratio">${fmt(counts.pass)} / ${fmt(total)} scenarios</span></div>
-      ${summaryTable({ passed: counts.pass, failed: counts.fail, missing: counts.missing })}
-    </div>`);
+  const cards = totals.map(({ node, counts, total }) => {
+    const score = ratio(counts.pass, total);
+    const width = score === null ? 0 : Math.min(Number(pctValue(score)), 100);
+    return `
+    <div class="panel card">
+      <div class="card-head"><div class="icon-prefix node-name">${nodeLogo(node)}${esc(node.name)}</div></div>
+      <div class="card-score" style="--node-color:${esc(node.color)}">
+        <div class="score-line"><strong>${pctValue(score)}<small>%</small></strong><span class="card-count">${fmt(counts.pass)}/${fmt(total)}</span></div>
+        <span class="node-score-bar" aria-hidden="true"><i style="width:${width}%"></i></span>
+      </div>
+      <div class="card-stats">${summaryTable({ passed: counts.pass, failed: counts.fail, missing: counts.missing })}</div>
+    </div>`;
+  });
   const unavailable = data.nodes.filter((node) => !node.report).map((node) => `
-    <div class="panel card"><div class="icon-prefix node-name">${nodeDot(node)}${esc(node.name)}</div>
+    <div class="panel card"><div class="card-head"><div class="icon-prefix node-name">${nodeLogo(node)}${esc(node.name)}</div></div>
       <div class="status error">No report</div><div class="warn-msg">${esc(node.error || 'no report')}</div>
     </div>`);
   $('summary').innerHTML = cards.concat(unavailable).join('') || '<div class="loading">No nodes configured.</div>';
 
+  document.querySelector('.ledger-table').style.setProperty('--node-count', loaded.length);
   $('table-columns').innerHTML = `<col class="table-scenario">${loaded.map(() => '<col class="table-node">').join('')}`;
-  $('table-head').innerHTML = `<tr><th>Scenario</th>${totals.map(({ node, counts, total }) => heading(node, counts.pass, total)).join('')}</tr>`;
+  const row = (label, cell) =>
+    `<tr class="head-row"><th>${label}</th>${totals.map((entry) => `<th>${cell(entry)}</th>`).join('')}</tr>`;
+  const scoreOf = ({ counts, total }) => ratio(counts.pass, total);
+  $('table-head').innerHTML = [
+    row('Scenarios', (entry) => {
+      const score = scoreOf(entry);
+      return `<span class="cellbox cellbox-head">${nodeLogo(entry.node)}<span class="head-name" title="${esc(entry.node.name)}">${esc(entry.node.name)}</span><span class="score ${scoreClass(entry.counts)}">${pctText(score)}</span></span>`;
+    }),
+    row('', (entry) => {
+      const score = scoreOf(entry);
+      const width = score === null ? 0 : Math.min(Number(pctValue(score)), 100);
+      return `<span class="cellbox"><span class="node-score-bar" style="--node-color:${esc(entry.node.color)}" aria-hidden="true"><i style="width:${width}%"></i></span></span>`;
+    }),
+    row('', (entry) => `<span class="cellbox cellbox-end"><span class="cnt">${fmt(entry.counts.pass)}/${fmt(entry.total)}</span></span>`),
+  ].join('');
 
   const rows = grouped(cases, (scenario) => scenario.category).map(([category, entries]) => {
     const fractions = fraction(entries, loaded, results);
@@ -125,6 +154,7 @@ function renderLedger(data) {
   $('table-body').innerHTML = rows || `<tr class="empty-row"><td colspan="${loaded.length + 1}">No scenarios in the reports.</td></tr>`;
   activateGroupToggles();
   activateScenarioToggles();
+  fitHeadNames();
 }
 
 async function main() {

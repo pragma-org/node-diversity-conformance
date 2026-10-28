@@ -1,8 +1,9 @@
 {
   "id": "uplc-turbo",
   "version": "1",
-  "title": "UPLC turbo benchmarks",
+  "title": "UPLC benchmarks",
   "kind": "non-functional",
+  "stage": "uplc-execution",
   "description": "Run a fixed corpus of real-world Flat-encoded UPLC programs through the production evaluator. Each implementation reports representative pure CEK evaluation time, memory usage, and consumed CPU and memory budgets, together with the machine details needed to interpret performance measurements. Flat decoding is intentionally measured by a separate scenario.",
   "schema": "scenarios/uplc-turbo/schema.json"
 }

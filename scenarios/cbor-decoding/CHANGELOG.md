@@ -1,5 +1,55 @@
 # Changelog
 
+## Version 2 Reports
+
+The CBOR-decoding scenario now reads the report format of
+[cardano-cbor-dataset](https://github.com/r2rationality/cardano-cbor-dataset#report-output-format). Version 1
+reports stay valid: the site reads both versions.
+
+### Spec Changes
+
+- A version 2 report has one outcome per sample, in `results`. The value is `true`, or an error message of the form
+  `<category>: <message>`.
+- The report names the commit of the dataset (`dataset_commit`) and the commit of the node code
+  (`implementation_commit`). These fields are required.
+- The report has no `era` field. The site deduces the era from the protocol version: major versions 10 and 11 are
+  Conway, and 12 and more are Dijkstra.
+- The report has no `totals`, `rules`, `corpus`, or `scenario` field. The site computes the counts from `results`.
+- The current schema is [`schema.json`](schema.json). The schema of version 1 is
+  [`schema-v1.json`](schema-v1.json).
+
+### How the Site Counts Samples
+
+The category in the path of a sample (`<rule>/<category>/<file>`) gives its expectation class:
+
+| Category                                  | Class            |
+| ----------------------------------------- | ---------------- |
+| `valid`, `manual-valid`                   | Valid round-trip |
+| `invalid-zap-<n>`, `manual-invalid`       | Invalid rejected |
+
+Whether a sample was mutated does not matter for conformance, so the site makes no difference between the
+mutation levels. For a version 1 report, the site adds the mutation counts to the invalid counts.
+
+The site stops with an error for any other category.
+
+### Eras
+
+A node can publish one report per era. In `metadata.json`, give a source for each era:
+
+```json
+"reports": {
+  "cbor-decoding": {
+    "conway": "https://example.org/my-node/cbor-conway.json",
+    "dijkstra": "https://example.org/my-node/cbor-dijkstra.json"
+  }
+}
+```
+
+A single source stays valid. The site reads the era from the report. A version 1 report has no era, and the site
+assigns it to `conway`. The page shows one era at a time, and the score on the homepage uses `conway`.
+
+For local preview data, name the files `preview/<node-id>-<era>.json` when the metadata names eras.
+
 ## Changes Since `8038e7d`
 
 This file describes the report contract changes between `8038e7d` and the

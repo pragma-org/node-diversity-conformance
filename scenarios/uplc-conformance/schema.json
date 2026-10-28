@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://node-diversity-conformance.pragma.io/scenarios/uplc-conformance/schema.json",
-  "title": "UPLC conformance scenario report",
+  "title": "UPLC functional tests scenario report",
   "type": "object",
   "required": ["version", "scenario", "generated_at", "implementation", "scenarios"],
   "properties": {

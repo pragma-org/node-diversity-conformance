@@ -1,4 +1,4 @@
-"""Build and score the ledger transaction rules scenario."""
+"""Build and score the ledger rules scenario."""
 
 import json
 import re

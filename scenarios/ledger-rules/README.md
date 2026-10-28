@@ -1,4 +1,4 @@
-# Ledger Transaction Rules Scenario
+# Ledger Rules Scenario
 
 This functional scenario compares phase-one ledger validation across node
 implementations. Every implementation runs the same versioned transaction
