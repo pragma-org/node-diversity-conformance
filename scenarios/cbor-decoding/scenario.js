@@ -5,28 +5,30 @@ const CATEGORIES = [
     key: 'roundtrip',
     label: 'Valid round-trip',
     short: 'Round-trip',
-    expected: 'generated_decoded_reencoded_expected',
-    actual: 'generated_decoded_reencoded_actual',
+    expected: 'valid_expected',
+    actual: 'valid_actual',
   },
   {
     key: 'rejected',
     label: 'Invalid rejected',
     short: 'Rejected',
-    expected: 'generated_must_be_rejected_expected',
-    actual: 'generated_must_be_rejected_actual',
-  },
-  {
-    key: 'zap',
-    label: 'Mutations rejected',
-    short: 'Zap',
-    expected: 'zap_must_be_rejected_expected',
-    actual: 'zap_must_be_rejected_actual',
+    expected: 'invalid_expected',
+    actual: 'invalid_actual',
   },
 ];
 
 const MAX_SAMPLES_PER_CLASS = 25;
 
-const state = { nodes: [], category: 'all', onlyIssues: false };
+const DEFAULT_ERA = 'conway';
+// The eras that have a dataset. They are always offered, even when no node has published a report for them yet.
+const ERAS = ['conway', 'dijkstra'];
+const DATASET_REPOSITORY = 'https://github.com/r2rationality/cardano-cbor-dataset';
+const LEDGER_REPOSITORY = 'https://github.com/IntersectMBO/cardano-ledger';
+
+const state = {
+  allNodes: [], nodes: [], eras: [], era: DEFAULT_ERA, category: 'all',
+  open: new Set(), samples: {}, ledgerCommits: {},
+};
 
 const $ = (id) => document.getElementById(id);
 
@@ -52,19 +54,100 @@ function score(outcome, category = 'all') {
   return { met, expected, ratio: expected === 0 ? null : met / expected };
 }
 
-function pct(ratio) {
+// Never round a failing node up to 100%.
+function pctValue(ratio) {
   if (ratio === null) return '—';
-  if (ratio === 1) return '100%';
-  // Never round a failing node up to 100%.
-  return `${Math.min(Math.floor(ratio * 10000) / 100, 99.99).toFixed(2)}%`;
+  if (ratio === 1) return '100';
+  return Math.min(Math.floor(ratio * 10000) / 100, 99.99).toFixed(2);
+}
+
+function pct(ratio) {
+  return ratio === null ? '—' : `${pctValue(ratio)}%`;
 }
 
 function fmt(n) {
   return Number(n).toLocaleString('en-US');
 }
 
+function eraOf(report) {
+  return report.era || DEFAULT_ERA;
+}
+
+function eraName(era) {
+  return era.charAt(0).toUpperCase() + era.slice(1);
+}
+
+function erasOf(nodes) {
+  const eras = new Set(ERAS);
+  for (const n of nodes) {
+    if (n.report) eras.add(eraOf(n.report));
+    for (const era of Object.keys(n.eras || {})) eras.add(era);
+  }
+  return [...ERAS, ...[...eras].filter((era) => !ERAS.includes(era)).sort()];
+}
+
+function nodeForEra(n, era) {
+  const byEra = { ...(n.eras || {}) };
+  if (n.report) byEra[eraOf(n.report)] = { report: n.report, report_url: n.report_url, error: n.error };
+  if (byEra[era]) return { ...n, ...byEra[era] };
+  const error = n.report || n.eras ? `no ${era} report` : n.error;
+  return { ...n, report: null, report_url: null, error };
+}
+
+function commitLink(repository, commit) {
+  const label = `<code>${esc(commit.slice(0, 7))}</code>`;
+  const url = safeUrl(repository);
+  return url ? `<a href="${esc(url)}/commit/${esc(commit)}" target="_blank" rel="noopener">${label}</a>` : label;
+}
+
+// The latest dataset is the one named by the most recent report that names one. A report made with another dataset, or
+// with none, is not up to date.
+function latestDatasetCommit() {
+  const time = (n) => new Date(n.report.generated_at).getTime() || 0;
+  const named = loaded().filter((n) => n.report.dataset_commit).sort((a, b) => time(b) - time(a));
+  return named.length ? named[0].report.dataset_commit : null;
+}
+
+// A pill that tells whether the report was made with the latest dataset, with a box that gives the reason on hover.
+// Nothing is shown when no report names a dataset.
+function freshnessPill(report, latest) {
+  if (!latest) return '';
+  const short = (commit) => `<code>${esc(commit.slice(0, 7))}</code>`;
+  const pill = (kind, label, reason) =>
+    `<span class="freshness ${kind}" tabindex="0">${label}<span class="freshness-tip" role="tooltip">${reason}</span></span>`;
+  if (report.dataset_commit === latest) {
+    return pill('latest', 'Latest', `This report was made with the latest CBOR dataset: ${short(latest)}`);
+  }
+  const reason = report.dataset_commit
+    ? `This report was made with an older version of the dataset: ${short(report.dataset_commit)}`
+    : `This report was made with an older version of the dataset. The report does not name it.`;
+  return pill('outdated', 'Outdated', reason);
+}
+
+function isoDate(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 10);
+}
+
+// The facts that identify a report, folded under the card so that the score stays the first thing to read.
+function reportDetails(report, node) {
+  const rows = [
+    ['Protocol', esc(report.protocol_version)],
+    report.dataset_commit && ['Dataset version', commitLink(DATASET_REPOSITORY, report.dataset_commit)],
+    report.implementation_commit && ['Node version', commitLink(node.repository, report.implementation_commit)],
+    isoDate(report.generated_at) && ['Generated', esc(isoDate(report.generated_at))],
+  ].filter(Boolean);
+  return `<details class="card-details"><summary>Versions</summary><div class="key-values">${
+    rows.map(([label, value]) => `<div class="key-value"><span>${label}</span><span>${value}</span></div>`).join('')
+  }</div></details>`;
+}
+
 function dot(node) {
   return `<span class="dot" style="background:${node.color}"></span>`;
+}
+
+function logo(node) {
+  return node.logo ? `<img class="node-logo-small" src="../../${esc(node.logo)}" alt="">` : dot(node);
 }
 
 function loaded() {
@@ -83,67 +166,56 @@ function renderWarnings() {
 
   const icon = `<svg style="position: relative; top: 2px;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-triangle"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
 
-  for (const n of state.nodes.filter((n) => n.error)) {
-    out.push(`<div class="note error"><strong>${icon}${esc(n.name)}:</strong> report unavailable (${esc(n.error)}).</div>`);
-  }
   const nodes = loaded();
-  const corpora = new Set(nodes.map((n) => n.report.corpus));
-  if (corpora.size > 1) {
-    const list = nodes.map((n) => `${esc(n.name)} <code>${esc(n.report.corpus)}</code>`).join(', ');
-    out.push(`<div class="note warn"><strong>${icon}Different corpora:</strong> ${list}. Scores are not directly comparable.</div>`);
+  if (nodes.length) {
+    for (const n of state.nodes.filter((n) => n.error)) {
+      out.push(`<div class="note error"><strong>${icon}${esc(n.name)}:</strong> report unavailable (${esc(n.error)}).</div>`);
+    }
   }
   const versions = new Set(nodes.map((n) => n.report.protocol_version));
   if (versions.size > 1) {
     const list = nodes.map((n) => `${esc(n.name)} <code>${esc(n.report.protocol_version)}</code>`).join(', ');
     out.push(`<div class="note warn"><strong>${icon}Different protocol versions:</strong> ${list}.</div>`);
   }
-  for (const n of nodes) {
-    const t = n.report.totals;
-    const sum = Number(t.generated_decoded_reencoded_expected) + Number(t.generated_must_be_rejected_expected);
-    if (Number(t.generated_total) !== sum) {
-      out.push(`<div class="note warn"><strong>${icon}${esc(n.name)}:</strong> generated_total (${fmt(t.generated_total)})
-        does not equal the sum of the generated expectations (${fmt(sum)}).</div>`);
-    }
-  }
   $('warnings').innerHTML = out.join('');
 }
 
 function renderCards() {
+  const latest = latestDatasetCommit();
   const cards = ranked().map(({ node, s }) => {
     const r = node.report;
-    const failures = Array.isArray(r.failures) ? r.failures.length : 0;
-    const passed = s.ratio === 1;
-    const status = passed
-      ? '<div class="status pass">Fully conformant</div>'
-      : `<div class="status fail">${failures ? `${fmt(failures)} failures` : 'Not conformant'}</div>`;
-    const breakdown = CATEGORIES.map((c) => {
-      const cs = score(r.totals, c.key);
-      const cls = cs.ratio === null ? '' : cs.ratio === 1 ? 'ok' : 'ko';
-      return `<div class="key-value"><span>${c.label}</span><span class="${cls}">${fmt(cs.met)}/${fmt(cs.expected)}</span></div>`;
-    }).join('');
-    const repository = safeUrl(node.repository);
+    const width = s.ratio === null ? 0 : Math.min(Number(pctValue(s.ratio)), 100);
     return `<div class="panel card">
-      <div class="icon-prefix node-name">${dot(node)}${esc(node.name)}</div>
-      <div class="meta-text m-bottom-sm">protocol ${esc(r.protocol_version)}</div>
-      ${status}
-      <div><span class="score ${passed ? "pass" : "fail" }">${pct(s.ratio)}</span><span class="ratio">${fmt(s.met)} / ${fmt(s.expected)}</span></div>
-      <div class="key-values m-top-md">${breakdown}</div>
+      <div class="card-head"><div class="icon-prefix node-name">${logo(node)}${esc(node.name)}</div>${freshnessPill(r, latest)}</div>
+      <div class="card-score" style="--node-color:${esc(node.color)}">
+        <strong>${pctValue(s.ratio)}<small>%</small></strong>
+        <span class="node-score-bar" aria-hidden="true"><i style="width:${width}%"></i></span>
+      </div>
+      <div class="card-foot">${reportDetails(r, node)}<span class="card-count">${fmt(s.met)}/${fmt(s.expected)}</span></div>
     </div>`;
   });
-  const errors = state.nodes.filter((n) => n.error).map((node) => `<div class="panel card">
-      <div class="icon-prefix node-name">${dot(node)}${esc(node.name)}</div>
-      <div class="status error">No report</div>
-      <div class="err-msg">${esc(node.error)}</div>
-    </div>`);
+  // A node that has no report for the era is waiting for results. Any other error is shown as it is.
+  const errors = state.nodes.filter((n) => n.error).map((node) => {
+    const waiting = /^no (\w+ )?report$/.test(node.error);
+    return `<div class="panel card">
+      <div class="card-head"><div class="icon-prefix node-name">${logo(node)}${esc(node.name)}</div>${waiting ? '<span class="freshness pending">Pending</span>' : ''}</div>
+      ${waiting ? '' : `<div class="err-msg">${esc(node.error)}</div>`}
+    </div>`;
+  });
   $('cards').innerHTML = cards.concat(errors).join('') || '<div class="loading">No nodes configured.</div>';
 }
 
+function renderEras() {
+  $('eras').innerHTML = state.eras.map((era) =>
+    `<button class="button${state.era === era ? ' active' : ''}" data-era="${esc(era)}">${esc(eraName(era))}</button>`
+  ).join('');
+}
+
 function renderFilters() {
-  const buttons = [{ key: 'all', short: 'All categories' }, ...CATEGORIES].map((c) =>
+  const buttons = [...CATEGORIES, { key: 'all', short: 'All' }].map((c) =>
     `<button class="button${state.category === c.key ? ' active' : ''}" data-category="${c.key}">${esc(c.short)}</button>`
   ).join('');
-  $('filters').innerHTML = `${buttons}<span class="filter-sep"></span>
-    <button class="button${state.onlyIssues ? ' active' : ''}" data-toggle="issues">Only rules with gaps</button>`;
+  $('filters').innerHTML = buttons;
 }
 
 function cell(outcome) {
@@ -156,36 +228,99 @@ function scoreSpan(outcome) {
   const s = score(outcome, state.category);
   if (s.ratio === null) return ["na", "—"];
   const cls = s.ratio === 1 ? 'full' : 'partial';
-  return [cls, `${pct(s.ratio)}<span class="cnt">${fmt(s.met)}/${fmt(s.expected)}</span>`];
+  return [cls, `<span class="cellbox"><span class="pctv">${pct(s.ratio)}</span><span class="cnt">${fmt(s.met)}/${fmt(s.expected)}</span></span>`];
+}
+
+// The sample names are in a file of their own for each report. They are loaded the first time that a rule is unfolded.
+function loadSamples(url) {
+  if (!state.samples[url]) {
+    state.samples[url] = { status: 'loading' };
+    fetch(url)
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then((data) => { state.samples[url] = { status: 'ready', data }; })
+      .catch((error) => { state.samples[url] = { status: 'error', error: error.message }; })
+      .then(renderTable);
+  }
+  return state.samples[url];
+}
+
+function sampleCell(outcome) {
+  if (outcome === undefined) return '<td class="na">—</td>';
+  if (outcome === 1) return '<td class="full sample-pass">pass</td>';
+  const failureClass = String(outcome).split(':')[0];
+  return `<td class="partial sample-fail" title="${esc(outcome)}">fail <span class="cnt">${esc(failureClass)}</span></td>`;
+}
+
+// One row for each sample of the rule, with the outcome of every node that lists it.
+function sampleRows(rule, nodes) {
+  const columns = nodes.length + 1;
+  const message = (text) => `<tr class="sample-row"><td class="sample-note" colspan="${columns}">${text}</td></tr>`;
+  const sources = nodes.map((n) => (n.samples_file ? loadSamples(n.samples_file) : null));
+  if (sources.some((source) => source?.status === 'loading')) return message('Loading samples&hellip;');
+  const failed = sources.find((source) => source?.status === 'error');
+  if (failed) return message(`Samples unavailable (${esc(failed.error)}).`);
+
+  const kind = { roundtrip: 'valid', rejected: 'invalid' }[state.category];
+  const outcomes = new Map();
+  sources.forEach((source, column) => {
+    for (const [sampleKind, name, outcome] of source?.data?.[rule] || []) {
+      if (kind && sampleKind !== kind) continue;
+      if (!outcomes.has(name)) outcomes.set(name, new Array(nodes.length));
+      outcomes.get(name)[column] = outcome;
+    }
+  });
+  if (outcomes.size === 0) return message('No sample names in the reports for this rule.');
+  return [...outcomes.keys()].sort().map((name) =>
+    `<tr class="sample-row"><td class="sample-name">${esc(name)}</td>${Array.from(outcomes.get(name), sampleCell).join('')}</tr>`
+  ).join('');
+}
+
+// The Huddle specification of the selected era, at the ledger commit that the latest dataset was generated from.
+function specificationLink() {
+  const era = state.era;
+  const name = era.charAt(0).toUpperCase() + era.slice(1);
+  const dataset = latestDatasetCommit();
+  const commit = (dataset && state.ledgerCommits[dataset]) || 'master';
+  const url = `${LEDGER_REPOSITORY}/blob/${commit}/eras/${era}/impl/cddl/lib/Cardano/Ledger/${name}/HuddleSpec.hs`;
+  return `<a class="spec-link" href="${esc(url)}" target="_blank" rel="noopener">Specification</a>`;
 }
 
 function renderTable() {
-  const nodes = ranked().map((e) => e.node);
-  const headings = nodes.map((n) => {
-    let [cls, score] = scoreSpan(n.report.totals);
-    return `<th>${dot(n)}${esc(n.name)}<div class="score ${cls}">${score}</div></th>`;
-  }).join('');
-
-  $('table-head').innerHTML = `<tr><th>Rule</th>${headings}</tr>`;
-
-  const rules = [...new Set(nodes.flatMap((n) => Object.keys(n.report.rules || {})))].sort();
-  const hasGap = (rule) => nodes.some((n) => {
-    const outcome = n.report.rules?.[rule];
-    if (!outcome) return true;
-    const s = score(outcome, state.category);
-    return s.ratio !== null && s.ratio < 1;
+  const nodes = [...ranked().map((e) => e.node), ...state.nodes.filter((n) => !n.report)];
+  const summary = nodes.map((n) => {
+    const s = n.report ? score(n.report.totals, state.category) : null;
+    const width = !s || s.ratio === null ? 0 : Math.min(Number(pctValue(s.ratio)), 100);
+    const cls = !s ? 'missing' : s.ratio === null ? 'na' : s.ratio === 1 ? 'full' : 'partial';
+    return { n, s, width, cls };
   });
-  const shown = state.onlyIssues ? rules.filter(hasGap) : rules;
+  const row = (label, cell) =>
+    `<tr class="head-row"><th>${label}</th>${summary.map((e) => `<th>${cell(e)}</th>`).join('')}</tr>`;
 
-  const body = shown.map((rule) =>
-    `<tr><td>${esc(rule)}</td>${nodes.map((n) => cell(n.report.rules?.[rule])).join('')}</tr>`);
-  if (shown.length === 0) {
-    body.push(`<tr class="empty-row"><td colspan="${nodes.length + 1}">No rule has a gap in this category.</td></tr>`);
-  }
+  $('table-head').innerHTML = [
+    row('Rules', ({ n, s, cls }) =>
+      `<span class="cellbox cellbox-head">${logo(n)}<span class="head-name" title="${esc(n.name)}">${esc(n.name)}</span><span class="score ${cls}">${s ? pct(s.ratio) : 'missing'}</span></span>`),
+    row(specificationLink(), ({ n, width }) =>
+      `<span class="cellbox"><span class="node-score-bar" style="--node-color:${esc(n.color)}" aria-hidden="true"><i style="width:${width}%"></i></span></span>`),
+    row('', ({ s }) => `<span class="cellbox cellbox-end"><span class="cnt">${s ? `${fmt(s.met)}/${fmt(s.expected)}` : ''}</span></span>`),
+  ].join('');
+
+  const reference = state.allNodes.map((n) => nodeForEra(n, DEFAULT_ERA));
+  // Rules whose name starts with % are generated helpers, so they go after the named rules.
+  const byName = (a, b) => (a.startsWith('%') - b.startsWith('%')) || (a < b ? -1 : a > b ? 1 : 0);
+  const rules = [...new Set([...nodes, ...reference].flatMap((n) => Object.keys(n.report?.rules || {})))].sort(byName);
+  const body = rules.map((rule) =>
+    `<tr class="rule-row"><td><button type="button" class="rule-toggle" data-rule="${esc(rule)}" aria-expanded="${state.open.has(rule)}">${esc(rule)}</button></td>${nodes.map((n) => cell(n.report?.rules?.[rule])).join('')}</tr>${state.open.has(rule) ? sampleRows(rule, nodes) : ''}`);
   $('table-body').innerHTML = body.join('');
+  fitHeadNames();
 }
 
 function renderFailures() {
+  // The section only exists when a report has something to show.
+  const failing = ({ node, s }) => (Array.isArray(node.report.failures) && node.report.failures.length > 0) || s.expected > s.met;
+  $('failures-section').hidden = !ranked().some(failing);
   const blocks = ranked().map(({ node }) => {
     const failures = Array.isArray(node.report.failures) ? node.report.failures : [];
     const s = score(node.report.totals);
@@ -223,27 +358,43 @@ function renderFailures() {
   $('failures').innerHTML = blocks.join('');
 }
 
-function renderSources() {
-  $('sources').innerHTML = state.nodes.map((n) => {
-    const detail = n.report
-      ? `${esc(n.report.corpus)} &middot; pv ${esc(n.report.protocol_version)}`
-      : 'unavailable';
-    const url = safeUrl(n.report_url);
-    const report = url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${detail}</a>` : detail;
-    return `<span class="src-tag">${dot(n)} ${esc(n.name)} · ${report}</span>`;
-  }).join('');
-}
-
 function renderData() {
   renderTable();
   renderFilters();
 }
 
+function renderAll() {
+  state.nodes = state.allNodes.map((n) => nodeForEra(n, state.era));
+  renderEras();
+  renderWarnings();
+  renderCards();
+  renderData();
+  renderFailures();
+}
+
+function selectEra(era) {
+  state.era = era;
+  history.replaceState(null, '', `#${era}`);
+  renderAll();
+}
+
+$('table-body').addEventListener('click', (event) => {
+  const toggle = event.target.closest('.rule-toggle');
+  if (!toggle) return;
+  const rule = toggle.dataset.rule;
+  if (!state.open.delete(rule)) state.open.add(rule);
+  renderTable();
+});
+
+$('eras').addEventListener('click', (event) => {
+  const button = event.target.closest('button');
+  if (button?.dataset.era) selectEra(button.dataset.era);
+});
+
 $('filters').addEventListener('click', (event) => {
   const button = event.target.closest('button');
   if (!button) return;
   if (button.dataset.category) state.category = button.dataset.category;
-  if (button.dataset.toggle === 'issues') state.onlyIssues = !state.onlyIssues;
   renderData();
 });
 
@@ -252,12 +403,12 @@ async function main() {
     const response = await fetch('data.json', { cache: 'no-store' });
     if (!response.ok) throw new Error(`data.json: HTTP ${response.status}`);
     const data = await response.json();
-    state.nodes = data.nodes.map((n, i) => ({ ...n, color: n.color || "#ffffff" }));
-    renderWarnings();
-    renderCards();
-    renderData();
-    renderFailures();
-    renderSources();
+    state.ledgerCommits = data.ledger_commits || {};
+    state.allNodes = data.nodes.map((n, i) => ({ ...n, color: n.color || "#ffffff" }));
+    state.eras = erasOf(state.allNodes);
+    const requested = location.hash.slice(1);
+    state.era = state.eras.includes(requested) ? requested : DEFAULT_ERA;
+    renderAll();
   } catch (error) {
     $('cards').innerHTML = `<div class="note error"><strong>Could not load data:</strong> ${esc(error.message)}.
       Run <code>python3 scripts/build.py</code> and serve <code>_site/</code>.</div>`;

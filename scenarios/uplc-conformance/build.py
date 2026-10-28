@@ -1,4 +1,4 @@
-"""Build and score the UPLC conformance scenario."""
+"""Build and score the UPLC functional tests scenario."""
 
 import json
 import re

@@ -1,2 +1,6 @@
 _site/
 __pycache__/
+.cache/
+# Local preview reports can be large; jj refuses to snapshot a new file of more than 1 MiB.
+scenarios/*/preview/*-conway.json
+scenarios/*/preview/*-dijkstra.json

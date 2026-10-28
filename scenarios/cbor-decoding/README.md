@@ -9,13 +9,15 @@ accept/reject and round-trip expectations, not a performance score.
 1. Obtain the versioned CBOR corpus and its expected normalization rules.
 2. For every generated rule sample, decode it with the node's production CBOR
    decoder and, for valid samples, encode the decoded value again.
-3. Compare the re-encoded bytes with the corpus reference. Invalid and zapped
+3. Compare the re-encoded bytes with the corpus reference. Invalid
    samples must be rejected.
-4. Emit one JSON report matching [`schema.json`](schema.json), including the
-   corpus id, protocol version, per-rule counts, and failure details.
+4. Emit one JSON report matching [`schema.json`](schema.json), with the outcome
+   of every sample, the protocol version (it gives the era), and the commits of the
+   dataset and of the node code.
 
-The corpus is part of the setup and must be identified in every report. Two
-reports using different corpus versions are not directly comparable.
+The commit of the dataset is part of the setup and must be in every report. Two
+reports using different dataset commits are not directly comparable. The site
+reads version 1 reports as well, see [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Expectations
 

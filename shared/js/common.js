@@ -27,6 +27,17 @@ function nodeDot(node) {
   return `<span class="dot" style="background:${esc(node.color || '#1b6e4e')}"></span>`;
 }
 
+function nodeLogo(node) {
+  return node.logo ? `<img class="node-logo-small" src="../../${esc(node.logo)}" alt="">` : nodeDot(node);
+}
+
+// A percentage without the sign. Only a perfect score reads 100, and a score is never rounded up to it.
+function pctValue(value) {
+  if (value === null || value === undefined) return '—';
+  if (value === 1) return '100';
+  return Math.min(Math.floor(Number(value) * 10000) / 100, 99.99).toFixed(2);
+}
+
 function groupLabel(value) {
   return String(value).split('/').map((part) => part.replaceAll('_', ' ')).join(' / ');
 }
