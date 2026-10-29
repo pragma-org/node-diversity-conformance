@@ -1,0 +1,26 @@
+{
+  "id": "yano",
+  "name": "Yano",
+  "language": "Java",
+  "repository": "https://github.com/bloxbean/yano",
+  "website": "https://getyano.dev",
+  "color": "#b9f57d",
+  "reports": {
+    "cbor-decoding": {
+      "github_releases": "bloxbean/yano",
+      "asset": "yano-*-cbor-decoding.json"
+    },
+    "ledger-rules": {
+      "github_releases": "bloxbean/yano",
+      "asset": "yano-*-ledger-rules.json"
+    },
+    "uplc-conformance": {
+      "github_releases": "bloxbean/yano",
+      "asset": "yano-*-uplc-conformance.json"
+    },
+    "uplc-turbo": {
+      "github_releases": "bloxbean/yano",
+      "asset": "yano-*-uplc-turbo.json"
+    }
+  }
+}
