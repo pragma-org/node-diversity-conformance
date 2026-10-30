@@ -87,12 +87,30 @@ def build_node_catalog(nodes, scenarios, builders, scenario_entries, scenario_co
     return cards
 
 
+def report_failures(scenario_entries):
+    """The reports that a node configures but that could not be read. A node without a report is not a failure."""
+    failures = []
+    for scenario_id, entries in scenario_entries.items():
+        for entry in entries:
+            results = {None: entry, **entry.get("eras", {})}
+            for era, result in results.items():
+                if result.get("error") and result["error"] != "no report":
+                    label = f"{scenario_id}{f' {era}' if era else ''}: {entry['name']}"
+                    failures.append(f"{label}: {result['error']}")
+    return failures
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--preview",
         action="store_true",
         help="Prefer reports in scenarios/<id>/preview/ when building locally; CI does not enable this flag.",
+    )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit with an error when a configured report cannot be read, for pull request checks.",
     )
     args = parser.parse_args()
 
@@ -139,7 +157,13 @@ def main():
     (build_common.OUT / "catalog.json").write_text(
         json.dumps({"built_at": built_at, "scenarios": catalog, "nodes": node_catalog}, indent=2) + "\n"
     )
+    build_common.version_shared_assets()
     print(f"built  {build_common.OUT.relative_to(build_common.ROOT)}/ with {len(scenarios)} scenarios")
+
+    if args.strict:
+        failures = report_failures(scenario_entries)
+        if failures:
+            sys.exit("reports could not be read:\n" + "\n".join(f"  {failure}" for failure in failures))
 
 
 if __name__ == "__main__":

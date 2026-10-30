@@ -2,7 +2,7 @@
   "id": "cardano-node",
   "name": "Cardano node",
   "language": "Haskell",
-  "repository": "https://github.com/IntersectMBO/cardano-node",
+  "repository": "https://github.com/IntersectMBO/cardano-ledger",
   "website": "https://cardano.org/",
   "color": "#5e5086",
   "reports": {

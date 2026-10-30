@@ -1,4 +1,4 @@
-# UPLC Conformance Scenario
+# UPLC Functional Tests Scenario
 
 This scenario checks UPLC semantics and execution accounting separately across
 the complete vector set, including regression vectors. All vectors are

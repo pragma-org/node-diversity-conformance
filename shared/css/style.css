@@ -27,14 +27,16 @@
   --border-md: 2px;
   --outline-md: 8px;
 
-  --text-xs: 0.75rem;
-  --text-sm: 0.9rem;
-  --text-md: 16px;
+  --text-xs: 0.8rem;
+  --text-sm: 0.95rem;
+  --text-md: 18px;
   --text-lg: 1.25rem;
   --text-xl: clamp(2.2rem, 7vw, 4.7rem);
 
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
+  /* How far the text under or beside a score bar is set in from the edges of the bar. */
+  --bar-indent: 0.3rem;
   --space-md: 1rem;
   --space-lg: 2rem;
   --space-xl: 4rem;
@@ -132,6 +134,8 @@ h2 { font-size: var(--text-lg); }
 .status { font-family: var(--font-mono); text-transform: uppercase; }
 .eyebrow { margin-bottom: var(--space-sm); color: var(--color-accent); font: 500 var(--text-xs) var(--font-mono); letter-spacing: 0.16em; }
 .section { margin-bottom: var(--space-xl); }
+.section-compact { margin-bottom: var(--space-md); }
+.section-tight { margin-bottom: var(--space-lg); }
 .section-title { padding-bottom: var(--space-sm); color: var(--color-text-muted); font-size: var(--text-sm); font-weight: 500; letter-spacing: 0.18em; }
 .section-title em { margin-left: var(--space-sm); color: var(--color-text-muted); font: 400 var(--text-sm) var(--font-sans); letter-spacing: 0; text-transform: none; }
 .section-title-controls { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); }
@@ -171,6 +175,28 @@ h2 { font-size: var(--text-lg); }
 .summary-breakdown th, .summary-breakdown td { position: static; padding: 0 var(--space-md) 0 0; border: 0; text-align: left; }
 .summary-breakdown th { color: var(--color-text-muted); font-size: var(--text-xs); font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
 .summary-breakdown td { font-size: var(--text-sm); font-weight: 600; }
+#cards { align-items: start; }
+/* The pill wraps under the name when the card is too narrow for both. */
+.card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-xs) var(--space-sm); margin-bottom: var(--space-sm); }
+.card .node-name { display: flex; }
+.node-logo-small { width: 1.6rem; height: 1.6rem; flex: none; object-fit: contain; }
+.card-score { margin-top: var(--space-md); }
+.freshness { position: relative; padding: 0.1rem 0.55rem; border: var(--border-sm) solid currentColor; border-radius: 999px; font: 600 var(--text-xs) var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; cursor: help; }
+.freshness:focus-visible { outline: var(--border-md) solid currentColor; outline-offset: 2px; }
+.freshness.latest { color: var(--color-success); }
+.freshness.outdated { color: var(--color-warning); }
+.freshness-tip { position: absolute; top: calc(100% + 0.5rem); right: 0; z-index: 10; width: 14rem; padding: var(--space-sm) var(--space-md); border: var(--border-sm) solid currentColor; background: var(--color-surface-hover); box-shadow: var(--outline-md) var(--outline-md) var(--color-outline); color: var(--color-text); font: 400 var(--text-xs) / 1.5 var(--font-sans); letter-spacing: 0; text-transform: none; visibility: hidden; opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.freshness:hover .freshness-tip, .freshness:focus .freshness-tip { visibility: visible; opacity: 1; }
+.freshness.pending { color: var(--color-text-muted); cursor: default; }
+.card-score strong { display: block; }
+.card-score .node-score-bar { display: block; }
+.card-details { margin-top: var(--space-md); font: var(--text-xs) var(--font-mono); }
+.card-details summary { display: flex; align-items: center; gap: var(--space-sm); color: var(--color-accent); cursor: pointer; list-style: none; }
+.card-details summary::-webkit-details-marker { display: none; }
+.card-details summary::before { content: '\25B8'; transition: transform 0.15s; }
+.card-details[open] summary::before { transform: rotate(90deg); }
+.card-details summary:hover { color: var(--color-text); }
+.card-details .key-values { margin-top: var(--space-sm); }
 .summary-count.pass { color: var(--color-success); }
 .summary-count.fail { color: var(--color-failure); }
 
@@ -194,7 +220,8 @@ h2 { font-size: var(--text-lg); }
 .filter-sep { width: var(--border-sm); height: 1.1rem; margin: 0 var(--space-sm); background: var(--color-border); }
 
 .table-wrap { overflow-x: auto; }
-.turbo-table-viewport { max-height: 24rem; overflow: auto; }
+/* Tall, but short enough that the title above and the footer below fit on the screen with it. */
+.turbo-table-viewport { max-height: clamp(20rem, calc(100vh - 14rem), 42rem); overflow: auto; }
 table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); table-layout:fixed; }
 .turbo-table { width: max-content; min-width: 100%; table-layout: auto; }
 .turbo-table .turbo-fit-column { width: 1%; }
@@ -342,27 +369,25 @@ td.turbo-dimension { color: var(--color-text-muted); font: 500 var(--text-xs) va
 .loading { color: var(--color-text-muted); font: var(--text-sm) var(--font-mono); }
 
 .home-intro { padding: var(--space-lg) 0; color: var(--color-text); }
+.home-intro p { font-size: 1.2rem; line-height: 1.5; }
 p + p { margin-top: var(--space-sm); }
-.home-explain { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-lg); margin-top: var(--space-lg); }
-.home-explain article { padding-left: var(--space-sm); border-left: var(--border-md) solid var(--color-border-accent); }
-.home-explain h2 { font-weight: 600; }
-.home-explain h2 img { width: var(--text-lg); height: var(--text-lg); }
 .prose { color: var(--color-text); line-height: 1.5; font-size: var(--text-sm); }
-.home-explain .prose { color: var(--color-text-muted); }
 .node-section { margin-top: var(--space-lg); }
 .node-list { display: flex; flex-direction: column; gap: var(--space-md); }
 .node-card { display: flex; background: var(--color-surface); align-items: flex-start; gap: var(--space-md); padding: var(--space-md); }
 .node-logo { width: var(--logo-size); height: var(--logo-size); flex: 0 0 var(--logo-size); object-fit: contain; }
 .node-card-body { min-width: 0; flex: 1; }
 .node-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); }
+.node-card .node-description { margin-top: 1rem; font-size: 1.1rem; }
 .node-card h2 { font-weight: 500; line-height: 1.2; }
-.node-score { display: flex; flex: 0 0 auto; flex-direction: column; align-items: flex-end; font-family: var(--font-mono); }
-.node-score strong { font-weight: 600; line-height: 1; }
-.node-score span { margin-top: var(--space-sm); color: var(--color-text-muted); font-size: var(--text-xs); }
-.node-scenarios { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.18rem var(--space-lg); margin-top: var(--space-md); padding-top: var(--space-sm); }
+.node-score { display: flex; flex: 0 0 auto; flex-direction: column; align-items: flex-end; min-width: 6rem; font-family: var(--font-mono); }
+.node-score strong, .card-score strong { color: var(--node-color, var(--color-text)); font-size: 1.7rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.04em; line-height: 1; }
+.node-score strong small, .card-score strong small { margin-left: 0.1rem; font-size: 0.8rem; letter-spacing: 0; }
+.node-score-bar { width: 100%; height: 0.6rem; margin-top: var(--space-sm); padding: 2px; border: var(--border-sm) solid color-mix(in srgb, var(--color-text) 40%, transparent); }
+.node-score-bar i { display: block; height: 100%; background: var(--node-color, var(--color-accent)); }
+.node-scenarios { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.18rem var(--space-lg); margin-top: 1rem; }
 .node-scenarios strong { color: var(--color-accent); font-weight: 600; }
 .node-card-links { min-height: 1rem; margin-top: var(--space-sm); font: var(--text-xs) var(--font-mono); }
-.node-card-separator { color: var(--color-border-accent); }
 .node-description p + ul, .node-description ul + p { margin-top: var(--space-sm); }
 .node-description ul { padding-left: var(--space-lg); }
 .node-description code { color: var(--color-accent); }
@@ -375,6 +400,33 @@ p + p { margin-top: var(--space-sm); }
 .scenario-card .arrow { color: var(--color-accent); }
 .scenario-card h2 { margin-top: var(--space-lg); font-weight: 500; color: var(--color-text) !important; }
 .scenario-nodes { flex-wrap: wrap; margin-top: auto; padding-top: var(--space-lg); }
+
+.pipeline { --tile-pad: 1rem; --arrow-thickness: 0.25rem; --arrow-head: 0.55rem; --arrow-length: 1.3rem; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--space-lg) 0.85rem; }
+/* The shaft stops where the head starts, so that the tip of the head is a clean point. */
+.stage-arrow { position: relative; flex: 1; height: var(--arrow-thickness); background: linear-gradient(var(--color-accent), var(--color-accent)) left / calc(100% - var(--arrow-length) + 1px) 100% no-repeat; }
+.stage-arrow::after { position: absolute; top: calc((var(--arrow-thickness) - 2 * var(--arrow-head)) / 2); right: 0; border-left: var(--arrow-length) solid var(--color-accent); border-top: var(--arrow-head) solid transparent; border-bottom: var(--arrow-head) solid transparent; content: ''; }
+/* The tiles cast a shadow to the right and below, so the arrows sit half a shadow off the geometric centre of the gap. */
+.stage-arrow { top: calc(var(--outline-md) / 2); left: calc(var(--outline-md) / 2); flex: none; align-self: center; width: 2.2rem; }
+.stage-tile { position: relative; display: flex; min-height: 13rem; flex-direction: column; justify-content: flex-start; gap: var(--space-lg); padding: calc(var(--tile-pad) + 0.75rem) var(--tile-pad) var(--tile-pad); overflow: hidden; background: var(--color-surface); box-shadow: var(--outline-md) var(--outline-md) var(--color-outline); color: var(--color-text); transition: transform 0.15s, background 0.15s, box-shadow 0.15s; }
+.stage-tile:hover { background: var(--color-accent); box-shadow: var(--outline-md) var(--outline-md) var(--color-text); text-decoration: none; transform: translateY(-4px); }
+.stage-tile::before { position: absolute; top: 0; left: 0; width: 100%; height: var(--space-sm); background: var(--color-accent); content: ''; transition: background 0.15s; }
+.stage-tile:hover::before { background: var(--color-text); }
+.stage-tile:hover .stage-title { color: var(--color-bg) !important; text-decoration: none; }
+.stage-title { max-width: 100%; white-space: pre-line; color: var(--color-text) !important; font-size: clamp(1.8rem, 3.8vw, 3.4rem); font-weight: 600; letter-spacing: -0.05em; line-height: 0.95; }
+.stage-index { position: absolute; right: var(--tile-pad); bottom: var(--tile-pad); color: transparent; font-size: 3.6rem; font-weight: 700; letter-spacing: -0.06em; line-height: 0.8; pointer-events: none; -webkit-text-stroke: var(--border-md) var(--color-border-accent); transition: -webkit-text-stroke-color 0.15s; }
+.stage-tile:hover .stage-index { -webkit-text-stroke-color: var(--color-text); }
+.kind-icons { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-sm) 0.7rem; }
+.kind-icon { --kind-color: var(--color-accent); display: inline-flex; align-items: center; justify-content: center; height: 3.4rem; padding: 0 0.8rem; border: var(--border-md) solid var(--kind-color); border-radius: 999px; background: transparent; color: var(--kind-color) !important; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.kind-icon.non-functional { --kind-color: var(--color-warning); }
+.kind-glyph { width: 1.5rem; height: 1.5rem; flex: none; background: currentColor; mask: center / contain no-repeat; -webkit-mask: center / contain no-repeat; }
+.functional .kind-glyph { mask-image: url(../icons/check-circle.svg); -webkit-mask-image: url(../icons/check-circle.svg); }
+.non-functional .kind-glyph { mask-image: url(../icons/cpu.svg); -webkit-mask-image: url(../icons/cpu.svg); }
+.kind-label { margin-left: 0.6rem; font: 600 0.75rem var(--font-mono); letter-spacing: 0.06em; line-height: 1.15; text-transform: uppercase; }
+.kind-icon:hover, .kind-icon:focus-visible { background: var(--kind-color); color: var(--color-bg) !important; text-decoration: none; }
+.stage-tile:hover .kind-icon.functional { --kind-color: var(--color-text); }
+.stage-title::after { position: absolute; inset: 0; content: ''; }
+.stage-tile.both::before { background: linear-gradient(90deg, var(--color-accent) 50%, var(--color-warning) 50%); }
+.stage-tile.both:hover::before { background: linear-gradient(90deg, var(--color-text) 50%, var(--color-warning) 50%); }
 .scenario-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-md); margin-bottom: var(--space-lg); color: var(--color-text-muted); font: var(--text-xs) var(--font-mono); }
 td.measure { color: var(--color-accent); font-family: var(--font-mono); white-space: nowrap; }
 .dimension-summary { display: flex; flex-direction: column; gap: 0.15rem; }
@@ -401,8 +453,145 @@ footer { margin-top: auto; margin-bottom: var(--space-sm); padding: var(--space-
   .section-title-controls .filter-bar { justify-content: flex-start; }
   .summary { grid-template-columns: 1fr; }
   .bar-sub { display: none; }
-  .home-explain { grid-template-columns: 1fr; gap: var(--space-md); }
   .scenario-meta { align-items: flex-start; flex-direction: column; }
   .node-card-heading { flex-direction: column; gap: var(--space-sm); }
   .node-score { align-items: flex-start; }
 }
+
+@media (max-width: 68rem) {
+  .pipeline { grid-template-columns: minmax(0, 1fr); }
+  .pipeline > .stage-tile { min-height: 11rem; }
+  .stage-arrow { background: var(--color-accent); justify-self: center; width: var(--arrow-thickness); height: var(--space-lg); margin: 0 0 var(--arrow-length); }
+  .stage-arrow::after { top: auto; right: calc((var(--arrow-thickness) - 2 * var(--arrow-head)) / 2); bottom: calc(-1 * var(--arrow-length)); border-top: var(--arrow-length) solid var(--color-accent); border-right: var(--arrow-head) solid transparent; border-bottom: 0; border-left: var(--arrow-head) solid transparent; }
+}
+.head-row th { position: static; padding-top: 0.15rem; padding-bottom: 0.15rem; border-bottom: 0; }
+.head-row:first-child th { padding-top: var(--space-lg); }
+.head-row:last-child th { padding-bottom: var(--space-xs); border-bottom: var(--border-md) solid var(--color-outline); }
+.rule-toggle { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.rule-toggle::before { content: "▸"; display: inline-block; width: 1.2em; color: var(--color-text-muted); }
+.rule-toggle[aria-expanded="true"]::before { content: "▾"; }
+.rule-toggle:hover, .rule-toggle:focus-visible { color: var(--color-accent); }
+.sample-row td { padding-top: 0.1rem; padding-bottom: 0.1rem; font-size: var(--text-xs); }
+td.sample-name { padding-left: 2.2rem; color: var(--color-text-muted); font-family: var(--font-mono); word-break: break-all; }
+td.sample-note { padding-left: 2.2rem; color: var(--color-text-muted); text-align: left; }
+td.sample-pass, td.sample-fail { font-weight: 500; }
+/* Percentage on the left, count on the right, in a box of the same width in every row, so the bar starts at the percentage. */
+.cellbox { display: flex; justify-content: space-between; align-items: baseline; width: 9.5rem; max-width: 100%; margin-left: auto; font-variant-numeric: tabular-nums; }
+.cellbox .node-score-bar { margin-top: 0; }
+.cellbox span.cnt { margin-left: 0; }
+.rule-row td:first-child, td.sample-name { min-width: 17rem; padding-right: 1rem; }
+.cellbox-end { justify-content: flex-end; }
+.cellbox-start { justify-content: flex-start; }
+.cellbox-start { align-items: center; gap: var(--space-sm); }
+.cbor-table thead th:first-child { width: 17rem; }
+.node-meta { gap: var(--space-md); }
+/* The details span the full width of the card. The count sits on the line of their summary, on the right. */
+.card-foot { display: grid; grid-template-columns: 1fr auto; align-items: baseline; padding: 0 var(--bar-indent); }
+.card-foot .card-details { grid-area: 1 / 1 / 2 / 3; }
+.card-count { grid-area: 1 / 2; pointer-events: none; margin-top: var(--space-md); color: var(--color-text-muted); font: 500 var(--text-xs) var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.cellbox-head { align-items: center; gap: var(--space-xs); }
+.cellbox-head .head-name { margin-right: auto; }
+.cellbox-head .head-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.cellbox-head .score, .cellbox-head img { flex: none; }
+.detail-table thead th:not(:first-child), .detail-table tbody td:not(:first-child) { padding-left: var(--space-sm); padding-right: var(--space-sm); }
+td .cellbox .pctv { margin-left: var(--bar-indent); }
+td .cellbox span.cnt { margin-right: var(--bar-indent); }
+.card-details .key-value code { font-size: inherit; }
+th .cellbox span.cnt { margin-right: var(--bar-indent); }
+#eras, #dimensions { margin-top: 0.3rem; }
+.section-title-lg { font-size: 1.1rem; }
+.section-title-lg .filter-bar { font-size: var(--text-sm); }
+.table-wrap-spaced { margin-top: var(--space-md); }
+.section-title-lg.section-title-controls .filter-bar { align-self: flex-end; margin-bottom: -1.6rem; }
+.section-title-lg.section-title-controls { min-height: 2.8rem; }
+.detail-table thead th:first-child { font-weight: 800; }
+.spec-link { font-size: var(--text-sm); font-weight: 500; }
+.detail-table thead th:first-child { padding-left: 0.4rem; }
+/* The pass, fail and miss counts of a node, with the number of scenarios that passed on the right. */
+.card-stats { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-md); margin-top: var(--space-md); padding: 0 var(--bar-indent); }
+.card-stats .summary-breakdown { margin-top: 0; }
+.card-stats .card-count { margin-top: 0; }
+.ledger-table .cellbox { width: 9.5rem; }
+/* The ledger rows fold with the same arrows as the rows of the CBOR rules. */
+.detail-table .group-toggle-marker { width: 1.2em; flex: 0 0 1.2em; color: var(--color-text-muted); }
+.detail-table .group-toggle-marker::before { content: '\25BE'; }
+.detail-table .group-toggle[aria-expanded='false'] .group-toggle-marker::before { content: '\25B8'; }
+.detail-table .group-toggle:hover .group-toggle-marker { color: var(--color-accent); }
+.detail-table .scenario-toggle::before { content: '\25B8'; display: inline-block; width: 1.15rem; margin-left: 0; margin-right: 0; color: var(--color-text-muted); }
+.detail-table .scenario-toggle[aria-expanded='true']::before { content: '\25BE'; }
+.detail-table .scenario-toggle:hover::before { color: var(--color-accent); }
+/* A scenario description wraps inside the table instead of making the first column as wide as the longest line. */
+.ledger-table .scenario-detail > td:first-child { width: 1px; white-space: normal; overflow-wrap: anywhere; }
+/* The scenario column takes the width that the node columns leave, and its labels wrap. */
+.ledger-table.detail-table { width: 100%; min-width: 0; }
+.ledger-table.detail-table th:first-child, .ledger-table.detail-table td:first-child { width: auto; white-space: normal; }
+.ledger-table.detail-table .group-header td:first-child, .ledger-table.detail-table thead th:first-child { white-space: nowrap; }
+/* The label hangs under its arrow when it wraps. */
+.detail-table .scenario-toggle { left: 0; padding-left: 1.15rem; text-indent: -1.15rem; }
+.score.missing { color: var(--color-warning); }
+/* One dimension of a node on a summary card, for pages that score more than one. */
+.dimension-block + .dimension-block { margin-top: var(--space-md); }
+.dimension-label { display: flex; align-items: baseline; justify-content: space-between; padding: 0 var(--bar-indent) 0 0; color: var(--color-text-muted); font: 500 var(--text-xs) var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.dimension-label .card-count { margin: 0; color: var(--color-text); letter-spacing: 0; text-transform: none; }
+.dimension-block .card-score { margin-top: var(--space-sm); }
+.uplc-table { --uplc-score-width: 6ch; --uplc-fraction-width: 9ch; }
+.uplc-table { --uplc-cell: 9.5rem; }
+.uplc-table .cellbox { width: var(--uplc-cell); }
+.uplc-table .head-row .dimension-heading { color: var(--color-text-muted); font: 500 var(--text-xs) var(--font-mono); }
+/* The percentage and the count of a row start and end where the bar of the header does. */
+.uplc-table .group-node-cell > div, .uplc-table .dimension-cell > div { box-sizing: border-box; grid-template-columns: 1fr auto; width: var(--uplc-cell); margin-left: auto; padding: 0 var(--bar-indent); }
+.uplc-table .group-node-cell .score { text-align: left; }
+.score-line { display: flex; align-items: baseline; justify-content: space-between; padding-right: var(--bar-indent); }
+.score-line .card-count { margin: 0; color: var(--color-text-muted); font: 500 var(--text-xs) var(--font-mono); }
+.section-title-big { font-size: 1.1rem; }
+.section-title-big .filter-bar { font-size: var(--text-sm); }
+.turbo-node-card .card-score { margin-top: var(--space-md); }
+/* The statistics of a benchmark card must fit the card, also for large deviations. */
+.turbo-node-card .turbo-metrics { column-gap: var(--space-sm); font-size: 0.72rem; }
+.turbo-node-card .turbo-metric strong { align-self: start; }
+
+/* CBOR summary: three cards per row on a wide page. The freshness pill stays in the top right corner. */
+#cards { grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); }
+#cards .card-head { flex-wrap: nowrap; align-items: center; }
+#cards .card-head .node-name { min-width: 0; }
+#cards .freshness { flex: none; }
+
+/* Nodes get a column of fixed width. A table with more nodes than the page can show scrolls sideways, and the first
+   column stays in place so that the names of the rules remain visible. */
+.detail-table { table-layout: auto; }
+.detail-table .cellbox { max-width: none; flex: none; }
+.detail-table thead th:first-child, .detail-table tbody td:first-child:not([colspan]) { position: sticky; left: 0; z-index: 2; }
+.detail-table thead th:first-child { z-index: 3; background: var(--color-bg); }
+
+/* The names of the rules take a column of fixed width. The node columns share the rest equally, so that long node names
+   fit, and the table scrolls when each node column would get less than 10rem. */
+.ledger-table.detail-table, .uplc-table.detail-table { table-layout: fixed; min-width: calc(15rem + var(--node-count, 5) * 10rem); }
+.ledger-table.detail-table col.table-scenario, .uplc-table.detail-table col.table-scenario { width: 15rem; }
+.ledger-table.detail-table col.table-node, .uplc-table.detail-table col.table-node { width: auto; }
+.ledger-table.detail-table thead th:first-child, .uplc-table.detail-table thead th:first-child { width: 15rem; }
+.ledger-table .cellbox, .uplc-table .cellbox { width: 100%; }
+
+/* The method text has the size of the introduction on the landing page. */
+.section-tight > p { font-size: 1.2rem; line-height: 1.5; }
+
+/* The summary cards have a lot to read: at most three in a row. */
+#summary { grid-template-columns: repeat(auto-fill, minmax(max(20rem, calc((100% - 2 * var(--space-md)) / 3)), 1fr)); }
+.turbo-node-card .turbo-metrics { column-gap: var(--space-md); font-size: var(--text-xs); }
+.turbo-value-cell .delta-only { font-size: inherit; }
+
+/* The node columns of the worst cases share the width that the two first columns leave, so they are equal. */
+#worst-cases-table { table-layout: fixed; width: 100%; min-width: calc(25rem + var(--node-count, 5) * 11rem); }
+#worst-cases-table col.turbo-fit-column:nth-child(1) { width: 15rem; }
+#worst-cases-table col.turbo-fit-column:nth-child(2) { width: 10rem; }
+#worst-cases-table col.turbo-node-column { width: auto; }
+.turbo-table th.turbo-logo-only { text-align: center; }
+.turbo-table th.turbo-logo-only .node-name { justify-content: center; }
+
+/* In the worst cases, the numbers of a column form a block of fixed width in the middle of the column. The header, with
+   its logo and name, is in the middle too, so the logo sits above the numbers. */
+#worst-cases-table .turbo-cell-values.single { grid-template-columns: 9ch; justify-content: center; }
+#worst-cases-table th.turbo-node-cell { text-align: center; }
+#worst-cases-table th.turbo-node-cell .node-name { justify-content: center; }
+
+/* When no budget disagreement follows, the worst cases are the last section, and the footer sits closer to them. */
+.section:has(+ #budget-disagreements-section[hidden]) { margin-bottom: 0; }

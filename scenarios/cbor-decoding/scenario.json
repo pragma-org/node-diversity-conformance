@@ -3,6 +3,7 @@
   "version": "1",
   "title": "CBOR decoding",
   "kind": "functional",
-  "description": "Decode the same CDDL-generated CBOR corpus with every implementation. Valid samples must decode, re-encode to the reference bytes, and be accepted; invalid and mutated samples must be rejected. Reports must include totals for each rule and each expectation class.",
+  "stage": "cbor-decoding",
+  "description": "Decode the same CDDL-generated CBOR corpus with every implementation. Valid samples must decode, re-encode to the reference bytes, and be accepted; invalid samples must be rejected. Reports must include totals for each rule and each expectation class.",
   "schema": "scenarios/cbor-decoding/schema.json"
 }

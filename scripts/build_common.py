@@ -3,11 +3,14 @@
 import fnmatch
 import gzip
 import html
+import hashlib
 import json
 import re
 import shutil
 import subprocess
 import sys
+import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,7 +19,27 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "_site"
 TIMEOUT_SECONDS = 60
+# Downloads are kept here, so that a build still works when GitHub is unreachable or limits the requests.
+# Reports stay out of version control: this directory is ignored.
+CACHE = ROOT / ".cache"
+# The list of releases of a repository changes rarely, and GitHub limits unauthenticated requests to 60 an hour.
+LISTING_MAX_AGE_SECONDS = 3600
+# A download that fails for a temporary reason is tried again after each of these pauses, in seconds.
+RETRY_PAUSES = (2, 5, 15, 30, 60)
+# 403 is here because GitHub answers it when it limits the requests. A missing file (404) is never tried again.
+RETRY_STATUS = {403, 408, 429, 500, 502, 503, 504}
 COMPRESSION_SUFFIXES = (".zst", ".gzip", ".gz")
+DEFAULT_ERA = "conway"
+# A report does not name its era: the protocol version tells it. Each entry gives the first major protocol version of an
+# era, so protocol versions 10 and 11 are Conway and 12 and more are Dijkstra.
+PROTOCOL_ERAS = ((10, "conway"), (12, "dijkstra"))
+CBOR_KINDS = ("valid", "invalid")
+# The classes of version 1 reports that make up each kind.
+CBOR_V1_CLASSES = {
+    "valid": ("generated_decoded_reencoded",),
+    "invalid": ("generated_must_be_rejected", "zap_must_be_rejected"),
+}
+CBOR_REPORT_FIELDS = ("generated_at", "protocol_version", "dataset_commit", "implementation_commit", "results")
 
 
 def slug(name):
@@ -160,11 +183,46 @@ def decompress_download(urls, payload):
     return payload
 
 
+def cache_path(url):
+    return CACHE / hashlib.sha256(url.encode()).hexdigest()
+
+
+def is_temporary(error):
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code in RETRY_STATUS
+    return isinstance(error, (urllib.error.URLError, TimeoutError, ConnectionError))
+
+
+def download_with_retries(url, headers):
+    for attempt, pause in enumerate((*RETRY_PAUSES, None)):
+        try:
+            request = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
+                return decompress_download((response.geturl(), url), response.read())
+        except Exception as error:
+            if pause is None or not is_temporary(error):
+                raise
+            print(f"retry  {url}: {error}; attempt {attempt + 2} in {pause}s", file=sys.stderr)
+            time.sleep(pause)
+
+
 def download(url):
-    request = urllib.request.Request(url, headers={"User-Agent": "node-diversity-conformance"})
-    with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
-        payload = response.read()
-        return decompress_download((response.geturl(), url), payload)
+    """Download a URL. A recent copy is used for the list of releases, and an old copy when the download fails."""
+    cached = cache_path(url)
+    is_listing = urlsplit(url).netloc == "api.github.com"
+    if is_listing and cached.is_file() and time.time() - cached.stat().st_mtime < LISTING_MAX_AGE_SECONDS:
+        return cached.read_bytes()
+    headers = {"User-Agent": "node-diversity-conformance"}
+    try:
+        payload = download_with_retries(url, headers)
+    except Exception as error:
+        if not cached.is_file():
+            raise
+        print(f"warn   {url}: {error}; using the copy downloaded earlier", file=sys.stderr)
+        return cached.read_bytes()
+    CACHE.mkdir(exist_ok=True)
+    cached.write_bytes(payload)
+    return payload
 
 
 def latest_release_asset(lookup):
@@ -185,9 +243,81 @@ def latest_release_asset(lookup):
     return max(dated)[1]
 
 
+def cbor_kind(category):
+    """Return the expectation class of the samples in a corpus category."""
+    if category in ("valid", "manual-valid"):
+        return "valid"
+    if category == "manual-invalid" or re.fullmatch(r"invalid-zap-[0-9]+", category):
+        return "invalid"
+    raise ValueError(f"unknown sample category {category!r}")
+
+
+def cbor_counts_from_v1(outcome):
+    """Merge the classes of a version 1 outcome into the kinds of a version 2 report."""
+    return {
+        f"{kind}_{side}": sum(outcome.get(f"{old}_{side}", 0) for old in classes)
+        for kind, classes in CBOR_V1_CLASSES.items()
+        for side in ("expected", "actual")
+    }
+
+
+def era_of_protocol(protocol_version):
+    major = int(str(protocol_version).split(".")[0])
+    eras = [era for first, era in PROTOCOL_ERAS if major >= first]
+    if not eras:
+        raise ValueError(f"protocol version {protocol_version} belongs to no known era")
+    return eras[-1]
+
+
+def cbor_report_from_results(report):
+    """Count the outcome of every sample of a version 2 CBOR report, per rule and per expectation class."""
+    missing = [field for field in CBOR_REPORT_FIELDS if field not in report]
+    if missing:
+        raise ValueError(f"CBOR report is missing {', '.join(missing)}")
+    era = era_of_protocol(report["protocol_version"])
+    rules = {}
+    failures = []
+    samples = {}
+    for sample, outcome in report["results"].items():
+        parts = sample.split("/")
+        if len(parts) < 3:
+            raise ValueError(f"sample path {sample!r} is not <rule>/<category>/<file>")
+        rule, kind = parts[0], cbor_kind(parts[1])
+        counts = rules.setdefault(rule, {f"{k}_{side}": 0 for k in CBOR_KINDS for side in ("expected", "actual")})
+        counts[f"{kind}_expected"] += 1
+        samples.setdefault(rule, []).append([kind, "/".join(parts[1:]), 1 if outcome is True else outcome])
+        if outcome is True:
+            counts[f"{kind}_actual"] += 1
+        elif isinstance(outcome, str):
+            failure_class, _, reason = outcome.partition(": ")
+            failures.append({"rule": rule, "class": failure_class, "sample": sample, "reason": reason})
+        else:
+            raise ValueError(f"outcome of {sample!r} must be true or an error message")
+    totals = {key: sum(counts[key] for counts in rules.values()) for key in next(iter(rules.values()), {})}
+    return {
+        "version": report["version"],
+        "scenario": "cbor-decoding",
+        "era": era,
+        "generated_at": report["generated_at"],
+        "protocol_version": report["protocol_version"],
+        "dataset_commit": report["dataset_commit"],
+        "implementation_commit": report["implementation_commit"],
+        "corpus": f"{era} {report['dataset_commit'][:7]}",
+        "successful": not failures,
+        "totals": totals,
+        "rules": rules,
+        "failures": failures,
+        # Written to a file of its own by build_scenario: it is too big to load with every page.
+        "samples": samples,
+    }
+
+
 def parse_report(payload, scenario):
     report = json.loads(payload)
-    if scenario["id"] == "cbor-decoding" and "version" not in report:
+    is_cbor = scenario["id"] == "cbor-decoding"
+    if is_cbor and report.get("version") == "2":
+        return cbor_report_from_results(report)
+    if is_cbor and "version" not in report:
         if "corpus" not in report or "totals" not in report or "rules" not in report:
             raise ValueError("legacy CBOR report is missing corpus, totals or rules")
         report.update({
@@ -196,9 +326,13 @@ def parse_report(payload, scenario):
             "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         })
     if report.get("version") != "1":
-        raise ValueError("incompatible report: must declare version=1")
+        raise ValueError("incompatible report: must declare version=1" + (" or 2" if is_cbor else ""))
     if report.get("scenario") != scenario["id"]:
         raise ValueError(f"report belongs to {report.get('scenario')!r}, expected {scenario['id']!r}")
+    if is_cbor:
+        report.setdefault("era", DEFAULT_ERA)
+        report["totals"] = cbor_counts_from_v1(report["totals"])
+        report["rules"] = {rule: cbor_counts_from_v1(outcome) for rule, outcome in report["rules"].items()}
     return report
 
 
@@ -206,13 +340,36 @@ def report_url(source):
     return source if isinstance(source, str) else latest_release_asset(source)
 
 
-def preview_report_path(scenario_id, node_id):
+def preview_report_path(scenario_id, stem):
     directory = ROOT / "scenarios" / scenario_id / "preview"
     for suffix in ("", *COMPRESSION_SUFFIXES):
-        path = directory / f"{node_id}.json{suffix}"
+        path = directory / f"{stem}.json{suffix}"
         if path.is_file():
             return path
     return None
+
+
+def era_sources(source):
+    """Split the report source of a scenario into one source per era; None names the era of a lone source."""
+    if isinstance(source, dict) and "github_releases" not in source:
+        return source
+    return {None: source}
+
+
+def fetch_report(node, scenario, era, source, use_preview):
+    """Return the URL and the parsed report of one source; a preview file is named <node>[-<era>].json."""
+    stem = node["id"] if era is None else f"{node['id']}-{era}"
+    preview = preview_report_path(scenario["id"], stem)
+    if use_preview and preview is not None:
+        url = f"../../scenarios/{scenario['id']}/preview/{preview.name}"
+        payload = decompress_download((preview.name,), preview.read_bytes())
+    else:
+        url = report_url(source)
+        payload = download(url)
+    report = parse_report(payload, scenario)
+    if era is not None and report.get("era", era) != era:
+        raise ValueError(f"report is for era {report['era']!r}, expected {era!r}")
+    return url, report
 
 
 def fetch_node(node, scenario, use_preview):
@@ -222,27 +379,36 @@ def fetch_node(node, scenario, use_preview):
         "language": node.get("language"),
         "repository": node.get("repository"),
         "color": node.get("color"),
+        "logo": node.get("logo_path"),
         "report_url": None,
         "report": None,
         "error": None,
     }
     source = node.get("reports", {}).get(scenario["id"])
-    preview = preview_report_path(scenario["id"], node["id"])
-    if source is None and not (use_preview and preview is not None):
+    if source is not None:
+        sources = era_sources(source)
+    elif use_preview and preview_report_path(scenario["id"], node["id"]) is not None:
+        sources = {None: None}
+    else:
         entry["error"] = "no report"
         return entry
-    try:
-        if use_preview and preview is not None:
-            entry["report_url"] = f"../../scenarios/{scenario['id']}/preview/{preview.name}"
-            payload = decompress_download((preview.name,), preview.read_bytes())
-        else:
-            entry["report_url"] = report_url(source)
-            payload = download(entry["report_url"])
-        entry["report"] = parse_report(payload, scenario)
-        print(f"ok     {scenario['id']}: {node['name']}")
-    except Exception as error:
-        entry["error"] = str(error)
-        print(f"failed {scenario['id']}: {node['name']}: {error}", file=sys.stderr)
+    results = {}
+    for era, era_source in sources.items():
+        result = {"report_url": None, "report": None, "error": None}
+        label = f"{scenario['id']}{f' {era}' if era else ''}: {node['name']}"
+        try:
+            result["report_url"], result["report"] = fetch_report(node, scenario, era, era_source, use_preview)
+            print(f"ok     {label}")
+        except Exception as error:
+            result["error"] = str(error)
+            print(f"failed {label}: {error}", file=sys.stderr)
+        results[era] = result
+    available = [era for era, result in results.items() if result["report"] is not None]
+    primary = DEFAULT_ERA if DEFAULT_ERA in available else (available or list(results))[0]
+    entry.update(results[primary])
+    others = {era: result for era, result in results.items() if era != primary}
+    if others:
+        entry["eras"] = others
     return entry
 
 
@@ -281,13 +447,23 @@ def build_scenario(scenario, nodes, built_at, use_preview, prepare):
     entries = [fetch_node(node, scenario, use_preview) for node in nodes]
 
     extra, output_entries, context = prepare(scenario, entries)
+
+    def publish(result, name):
+        if result["report"] is None:
+            return
+        samples = result["report"].pop("samples", None)
+        if samples:
+            (reports_dir / f"{name}-samples.json").write_text(json.dumps(samples, separators=(",", ":")) + "\n")
+            result["samples_file"] = f"../../reports/{scenario['id']}/{name}-samples.json"
+        (reports_dir / f"{name}.json").write_text(json.dumps(result["report"], indent=2) + "\n")
+        result["report_file"] = f"../../reports/{scenario['id']}/{name}.json"
+        if use_preview and result["report_url"].startswith("../../scenarios/"):
+            result["report_url"] = result["report_file"]
+
     for entry in entries:
-        if entry["report"] is not None:
-            report_path = reports_dir / f"{slug(entry['name'])}.json"
-            report_path.write_text(json.dumps(entry["report"], indent=2) + "\n")
-            entry["report_file"] = f"../../reports/{scenario['id']}/{slug(entry['name'])}.json"
-            if use_preview and entry["report_url"].startswith("../../scenarios/"):
-                entry["report_url"] = entry["report_file"]
+        publish(entry, slug(entry["name"]))
+        for era, result in entry.get("eras", {}).items():
+            publish(result, f"{slug(entry['name'])}-{era}")
 
     data = {
         "built_at": built_at,
@@ -299,3 +475,21 @@ def build_scenario(scenario, nodes, built_at, use_preview, prepare):
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "data.json").write_text(json.dumps(data, indent=2) + "\n")
     return entries, context
+
+
+def version_shared_assets():
+    """Add a content hash to the links to shared styles and scripts, so that a browser never shows a stale copy."""
+    def versioned(match):
+        quote, prefix, folder, name = match.groups()
+        asset = OUT / folder / name
+        if not asset.is_file():
+            return match.group(0)
+        digest = hashlib.sha256(asset.read_bytes()).hexdigest()[:8]
+        return f"{quote}{prefix}{folder}/{name}?v={digest}{quote}"
+
+    link = re.compile(r"""(["'])((?:\.\./)*)(css|js)/([\w.-]+\.(?:css|js))\1""")
+    for page in OUT.rglob("*.html"):
+        text = page.read_text()
+        updated = link.sub(versioned, text)
+        if updated != text:
+            page.write_text(updated)
