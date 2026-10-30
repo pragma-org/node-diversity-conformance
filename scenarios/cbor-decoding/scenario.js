@@ -27,7 +27,7 @@ const LEDGER_REPOSITORY = 'https://github.com/IntersectMBO/cardano-ledger';
 
 const state = {
   allNodes: [], nodes: [], eras: [], era: DEFAULT_ERA, category: 'all',
-  open: new Set(), samples: {}, ledgerCommits: {},
+  open: new Set(), samples: {}, ledgerCommits: {}, datasetChanges: {},
 };
 
 const $ = (id) => document.getElementById(id);
@@ -100,28 +100,28 @@ function commitLink(repository, commit) {
   return url ? `<a href="${esc(url)}/commit/${esc(commit)}" target="_blank" rel="noopener">${label}</a>` : label;
 }
 
-// The latest dataset is the one named by the most recent report that names one. A report made with another dataset, or
-// with none, is not up to date.
-function latestDatasetCommit() {
-  const time = (n) => new Date(n.report.generated_at).getTime() || 0;
-  const named = loaded().filter((n) => n.report.dataset_commit).sort((a, b) => time(b) - time(a));
-  return named.length ? named[0].report.dataset_commit : null;
+// The dataset changes of the selected era, as the build found them: the latest, and the one of each report.
+function datasetChanges() {
+  return state.datasetChanges[state.era] || null;
 }
 
-// A pill that tells whether the report was made with the latest dataset, with a box that gives the reason on hover.
-// Nothing is shown when no report names a dataset.
-function freshnessPill(report, latest) {
-  if (!latest) return '';
+// A pill that tells whether the report was made with the latest dataset of the era, with a box that gives the reason on
+// hover. A dataset is the samples of an era: a commit that changes only the README or the code is not a new one. Nothing
+// is shown when the build could not find the dataset changes.
+function freshnessPill(report, changes) {
+  if (!changes?.latest) return '';
   const short = (commit) => `<code>${esc(commit.slice(0, 7))}</code>`;
   const pill = (kind, label, reason) =>
     `<span class="freshness ${kind}" tabindex="0">${label}<span class="freshness-tip" role="tooltip">${reason}</span></span>`;
-  if (report.dataset_commit === latest) {
-    return pill('latest', 'Latest', `This report was made with the latest CBOR dataset: ${short(latest)}`);
+  if (!report.dataset_commit) {
+    return pill('outdated', 'Outdated', 'This report was made with an older version of the dataset. The report does not name it.');
   }
-  const reason = report.dataset_commit
-    ? `This report was made with an older version of the dataset: ${short(report.dataset_commit)}`
-    : `This report was made with an older version of the dataset. The report does not name it.`;
-  return pill('outdated', 'Outdated', reason);
+  const own = changes.by_commit[report.dataset_commit];
+  if (!own) return '';
+  if (own === changes.latest) {
+    return pill('latest', 'Latest', `This report was made with the latest CBOR dataset: ${short(own)}`);
+  }
+  return pill('outdated', 'Outdated', `This report was made with an older version of the dataset: ${short(own)}`);
 }
 
 function isoDate(value) {
@@ -181,12 +181,12 @@ function renderWarnings() {
 }
 
 function renderCards() {
-  const latest = latestDatasetCommit();
+  const changes = datasetChanges();
   const cards = ranked().map(({ node, s }) => {
     const r = node.report;
     const width = s.ratio === null ? 0 : Math.min(Number(pctValue(s.ratio)), 100);
     return `<div class="panel card">
-      <div class="card-head"><div class="icon-prefix node-name">${logo(node)}${esc(node.name)}</div>${freshnessPill(r, latest)}</div>
+      <div class="card-head"><div class="icon-prefix node-name">${logo(node)}${esc(node.name)}</div>${freshnessPill(r, changes)}</div>
       <div class="card-score" style="--node-color:${esc(node.color)}">
         <strong>${pctValue(s.ratio)}<small>%</small></strong>
         <span class="node-score-bar" aria-hidden="true"><i style="width:${width}%"></i></span>
@@ -282,7 +282,7 @@ function sampleRows(rule, nodes) {
 function specificationLink() {
   const era = state.era;
   const name = era.charAt(0).toUpperCase() + era.slice(1);
-  const dataset = latestDatasetCommit();
+  const dataset = datasetChanges()?.latest;
   const commit = (dataset && state.ledgerCommits[dataset]) || 'master';
   const url = `${LEDGER_REPOSITORY}/blob/${commit}/eras/${era}/impl/cddl/lib/Cardano/Ledger/${name}/HuddleSpec.hs`;
   return `<a class="spec-link" href="${esc(url)}" target="_blank" rel="noopener">Specification</a>`;
@@ -404,6 +404,7 @@ async function main() {
     if (!response.ok) throw new Error(`data.json: HTTP ${response.status}`);
     const data = await response.json();
     state.ledgerCommits = data.ledger_commits || {};
+    state.datasetChanges = data.dataset_changes || {};
     state.allNodes = data.nodes.map((n, i) => ({ ...n, color: n.color || "#ffffff" }));
     state.eras = erasOf(state.allNodes);
     const requested = location.hash.slice(1);

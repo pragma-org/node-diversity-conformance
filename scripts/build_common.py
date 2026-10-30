@@ -206,11 +206,19 @@ def download_with_retries(url, headers):
             time.sleep(pause)
 
 
+def is_pinned(url):
+    """What GitHub serves for a commit never changes, so a copy of it never gets old."""
+    parts = urlsplit(url)
+    if parts.netloc == "raw.githubusercontent.com":
+        return re.match(r"/[^/]+/[^/]+/[0-9a-f]{40}/", parts.path) is not None
+    return parts.netloc == "api.github.com" and re.search(r"[?&]sha=[0-9a-f]{40}(&|$)", parts.query) is not None
+
+
 def download(url):
     """Download a URL. A recent copy is used for the list of releases, and an old copy when the download fails."""
     cached = cache_path(url)
     is_listing = urlsplit(url).netloc == "api.github.com"
-    if is_listing and cached.is_file() and time.time() - cached.stat().st_mtime < LISTING_MAX_AGE_SECONDS:
+    if cached.is_file() and (is_pinned(url) or is_listing and time.time() - cached.stat().st_mtime < LISTING_MAX_AGE_SECONDS):
         return cached.read_bytes()
     headers = {"User-Agent": "node-diversity-conformance"}
     try:
