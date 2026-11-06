@@ -57,7 +57,30 @@ def prepare(_scenario, entries):
     }
     datasets = {commit for change in dataset_changes.values() for commit in [change["latest"], *change["by_commit"].values()] if commit}
     ledger_commits = {dataset: ledger_commit(dataset) for dataset in sorted(datasets)}
-    return {"ledger_commits": ledger_commits, "dataset_changes": dataset_changes}, entries, None
+    return {"ledger_commits": ledger_commits, "dataset_changes": dataset_changes}, entries, dataset_changes
+
+
+def is_outdated(report, dataset_changes):
+    """Whether a report was made with an older dataset than the latest one of its era. Mirrors the pill of the scenario
+    page: a report that names no dataset is outdated, and nothing is outdated when the dataset changes are unknown."""
+    if not (report and report.get("protocol_version")):
+        return False
+    try:
+        changes = dataset_changes.get(build_common.era_of_protocol(report["protocol_version"]))
+    except ValueError:
+        return False
+    if not changes or not changes["latest"]:
+        return False
+    if not report.get("dataset_commit"):
+        return True
+    own = changes["by_commit"].get(report["dataset_commit"])
+    return bool(own) and own != changes["latest"]
+
+
+def outdated(entry, dataset_changes):
+    """Whether any report of a node, in any era, is outdated."""
+    reports = [entry["report"], *(result["report"] for result in entry.get("eras", {}).values())]
+    return any(is_outdated(report, dataset_changes) for report in reports)
 
 
 def score(report, _context, _node_id=None):
