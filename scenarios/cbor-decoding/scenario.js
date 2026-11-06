@@ -88,10 +88,10 @@ function erasOf(nodes) {
 
 function nodeForEra(n, era) {
   const byEra = { ...(n.eras || {}) };
-  if (n.report) byEra[eraOf(n.report)] = { report: n.report, report_url: n.report_url, error: n.error };
+  if (n.report) byEra[eraOf(n.report)] = { report: n.report, report_url: n.report_url, error: n.error, freshness: n.freshness };
   if (byEra[era]) return { ...n, ...byEra[era] };
   const error = n.report || n.eras ? `no ${era} report` : n.error;
-  return { ...n, report: null, report_url: null, error };
+  return { ...n, report: null, report_url: null, freshness: null, error };
 }
 
 function commitLink(repository, commit) {
@@ -106,22 +106,19 @@ function datasetChanges() {
 }
 
 // A pill that tells whether the report was made with the latest dataset of the era, with a box that gives the reason on
-// hover. A dataset is the samples of an era: a commit that changes only the README or the code is not a new one. Nothing
-// is shown when the build could not find the dataset changes.
-function freshnessPill(report, changes) {
-  if (!changes?.latest) return '';
+// hover. The build decides it, and shows nothing when it could not find the dataset changes.
+function freshnessPill(freshness) {
+  if (!freshness) return '';
   const short = (commit) => `<code>${esc(commit.slice(0, 7))}</code>`;
   const pill = (kind, label, reason) =>
     `<span class="freshness ${kind}" tabindex="0">${label}<span class="freshness-tip" role="tooltip">${reason}</span></span>`;
-  if (!report.dataset_commit) {
+  if (freshness.status === 'latest') {
+    return pill('latest', 'Latest', `This report was made with the latest CBOR dataset: ${short(freshness.dataset)}`);
+  }
+  if (!freshness.dataset) {
     return pill('outdated', 'Outdated', 'This report was made with an older version of the dataset. The report does not name it.');
   }
-  const own = changes.by_commit[report.dataset_commit];
-  if (!own) return '';
-  if (own === changes.latest) {
-    return pill('latest', 'Latest', `This report was made with the latest CBOR dataset: ${short(own)}`);
-  }
-  return pill('outdated', 'Outdated', `This report was made with an older version of the dataset: ${short(own)}`);
+  return pill('outdated', 'Outdated', `This report was made with an older version of the dataset: ${short(freshness.dataset)}`);
 }
 
 function isoDate(value) {
@@ -181,12 +178,11 @@ function renderWarnings() {
 }
 
 function renderCards() {
-  const changes = datasetChanges();
   const cards = ranked().map(({ node, s }) => {
     const r = node.report;
     const width = s.ratio === null ? 0 : Math.min(Number(pctValue(s.ratio)), 100);
     return `<div class="panel card">
-      <div class="card-head"><div class="icon-prefix node-name">${logo(node)}${esc(node.name)}</div>${freshnessPill(r, changes)}</div>
+      <div class="card-head"><div class="icon-prefix node-name">${logo(node)}${esc(node.name)}</div>${freshnessPill(node.freshness)}</div>
       <div class="card-score" style="--node-color:${esc(node.color)}">
         <strong>${pctValue(s.ratio)}<small>%</small></strong>
         <span class="node-score-bar" aria-hidden="true"><i style="width:${width}%"></i></span>

@@ -19,9 +19,12 @@ function renderNodes(nodes) {
       repository ? `<a href="${esc(repository)}" target="_blank" rel="noopener">Source code</a>` : '',
     ].filter(Boolean).join('');
     const score = node.conformance || {};
-    const scenarioScores = (node.scenario_scores || []).map((scenario) =>
-      `<div class="key-value"><span>${esc(scenario.title)}</span><strong>${scenario.percentage === null ? '-' : `${scenario.percentage}%`}</strong></div>`
-    ).join('');
+    const scenarioScores = (node.scenario_scores || []).map((scenario) => {
+      const pill = scenario.outdated
+        ? '<span class="freshness outdated" tabindex="0">Outdated<span class="freshness-tip" role="tooltip">At least one report was made with an older version of the dataset.</span></span>'
+        : '';
+      return `<div class="key-value"><span>${esc(scenario.title)}</span><span class="score-with-pill">${pill}<strong>${scenario.percentage === null ? '-' : `${scenario.percentage}%`}</strong></span></div>`;
+    }).join('');
     return `<article class="panel node-card">
       <img class="node-logo" src="${esc(node.logo)}" alt="${esc(node.name)} logo">
       <div class="node-card-body">
