@@ -66,6 +66,7 @@ def build_node_catalog(nodes, scenarios, builders, scenario_entries, scenario_co
                 "passed": passed,
                 "total": total,
                 "configured": report is not None,
+                "outdated": builder.outdated(entry, scenario_contexts[scenario_id]) if hasattr(builder, "outdated") else False,
             })
         cards.append({
             "id": node["id"],

@@ -36,12 +36,37 @@ def ledger_commit(dataset_commit):
     return match.group(1) if match else None
 
 
+def freshness(report, dataset_changes):
+    """Whether a report was made with the latest dataset of its era: {"status": "latest" | "outdated", "dataset": the
+    dataset change of the report or None}. None when it cannot be told, for example when GitHub could not be read."""
+    if not (report and report.get("protocol_version")):
+        return None
+    try:
+        changes = dataset_changes[build_common.era_of_protocol(report["protocol_version"])]
+    except (KeyError, ValueError):
+        return None
+    if not changes["latest"]:
+        return None
+    if not report.get("dataset_commit"):
+        return {"status": "outdated", "dataset": None}
+    own = changes["by_commit"].get(report["dataset_commit"])
+    if not own:
+        return None
+    return {"status": "latest" if own == changes["latest"] else "outdated", "dataset": own}
+
+
+def outdated(entry, _context=None):
+    """Whether any report of a node, in any era, was made with an older dataset."""
+    results = [entry, *entry.get("eras", {}).values()]
+    return any((result.get("freshness") or {}).get("status") == "outdated" for result in results)
+
+
 def prepare(_scenario, entries):
-    reports = [entry["report"] for entry in entries]
-    reports += [result["report"] for entry in entries for result in entry.get("eras", {}).values()]
+    results = [*entries, *(result for entry in entries for result in entry.get("eras", {}).values())]
     # The commits of each report, by the era of its protocol version.
     commits_by_era = {}
-    for report in reports:
+    for result in results:
+        report = result["report"]
         if not (report and report.get("protocol_version") and report.get("dataset_commit")):
             continue
         try:
@@ -55,9 +80,12 @@ def prepare(_scenario, entries):
         era: {"latest": dataset_change(era), "by_commit": {commit: dataset_change(era, commit) for commit in sorted(commits)}}
         for era, commits in sorted(commits_by_era.items())
     }
+    for result in results:
+        result["freshness"] = freshness(result["report"], dataset_changes)
     datasets = {commit for change in dataset_changes.values() for commit in [change["latest"], *change["by_commit"].values()] if commit}
     ledger_commits = {dataset: ledger_commit(dataset) for dataset in sorted(datasets)}
-    return {"ledger_commits": ledger_commits, "dataset_changes": dataset_changes}, entries, None
+    latest = {era: {"latest": change["latest"]} for era, change in dataset_changes.items()}
+    return {"ledger_commits": ledger_commits, "dataset_changes": latest}, entries, None
 
 
 def score(report, _context, _node_id=None):
