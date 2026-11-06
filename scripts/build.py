@@ -68,7 +68,8 @@ def build_node_catalog(nodes, scenarios, builders, scenario_entries, scenario_co
             "built_at": built_at,
             "_ratio": weighted_ratio,
         })
-    cards.sort(key=lambda node: (-node["_ratio"], node["name"]))
+    # Nodes whose reports are all up to date come first. Each group is ordered by overall score.
+    cards.sort(key=lambda node: (any(score["outdated"] for score in node["scenario_scores"]), -node["_ratio"], node["name"]))
     for node in cards:
         node.pop("_ratio")
     return cards
