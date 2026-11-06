@@ -54,13 +54,6 @@ function score(outcome, category = 'all') {
   return { met, expected, ratio: expected === 0 ? null : met / expected };
 }
 
-// Never round a failing node up to 100%.
-function pctValue(ratio) {
-  if (ratio === null) return '—';
-  if (ratio === 1) return '100';
-  return Math.min(Math.floor(ratio * 10000) / 100, 99.99).toFixed(2);
-}
-
 function pct(ratio) {
   return ratio === null ? '—' : `${pctValue(ratio)}%`;
 }
