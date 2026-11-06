@@ -23,7 +23,7 @@ function renderNodes(nodes) {
       const pill = scenario.outdated
         ? '<span class="outdated-pill" title="At least one report was made with an older version of the dataset">Outdated</span>'
         : '';
-      return `<div class="key-value"><span>${esc(scenario.title)}</span><span class="score-with-pill">${pill}<strong>${scenario.percentage === null ? '-' : `${scenario.percentage}%`}</strong></span></div>`;
+      return `<div class="key-value"><span>${esc(scenario.title)}</span><span class="score-with-pill">${pill}<strong>${scenario.ratio === null ? '-' : `${pctValue(scenario.ratio)}%`}</strong></span></div>`;
     }).join('');
     return `<article class="panel node-card">
       <img class="node-logo" src="${esc(node.logo)}" alt="${esc(node.name)} logo">
@@ -31,8 +31,8 @@ function renderNodes(nodes) {
         <div class="node-card-heading">
           <div><h2 style="color:${esc(node.color)}">${esc(node.name)}</h2><div class="container meta-text node-meta m-top-sm">${esc(node.language)}${links}</div></div>
           <div class="node-score" style="--node-color:${esc(node.color)}">
-            <strong>${esc(score.percentage)}<small>%</small></strong>
-            <span class="node-score-bar" aria-hidden="true"><i style="width:${Math.min(Number(score.percentage) || 0, 100)}%"></i></span>
+            <strong>${pctValue(score.ratio)}<small>%</small></strong>
+            <span class="node-score-bar" aria-hidden="true"><i style="width:${Math.min(Number(pctValue(score.ratio)) || 0, 100)}%"></i></span>
           </div>
         </div>
         <div class="prose m-top-sm node-description">${node.description || ''}</div>

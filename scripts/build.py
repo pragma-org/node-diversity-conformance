@@ -33,19 +33,6 @@ def load_builders(scenarios):
 
 
 def build_node_catalog(nodes, scenarios, builders, scenario_entries, scenario_contexts, built_at):
-    denominators = {}
-    for scenario in scenarios:
-        scenario_id = scenario["id"]
-        builder = builders[scenario_id]
-        denominators[scenario_id] = max(
-            (
-                builder.score(entry["report"], scenario_contexts[scenario_id], entry["id"])[1]
-                for entry in scenario_entries[scenario_id]
-                if entry["report"]
-            ),
-            default=0,
-        )
-
     cards = []
     for node in nodes:
         scenario_scores = []
@@ -56,13 +43,12 @@ def build_node_catalog(nodes, scenarios, builders, scenario_entries, scenario_co
             entry = next(item for item in scenario_entries[scenario_id] if item["id"] == node["id"])
             report = entry["report"]
             passed, total = builder.score(report, scenario_contexts[scenario_id], node["id"])
-            denominator = denominators[scenario_id]
-            ratio = passed / denominator if denominator else 0
+            ratio = passed / total if total else 0
             weighted_ratio += ratio / len(scenarios)
             scenario_scores.append({
                 "id": scenario_id,
                 "title": scenario["title"],
-                "percentage": round(ratio * 100, 2) if report else None,
+                "ratio": ratio if report else None,
                 "passed": passed,
                 "total": total,
                 "configured": report is not None,
@@ -77,7 +63,7 @@ def build_node_catalog(nodes, scenarios, builders, scenario_entries, scenario_co
             "color": node.get("color"),
             "logo": node["logo_path"],
             "description": node["description_html"],
-            "conformance": {"percentage": round(weighted_ratio * 100, 2)},
+            "conformance": {"ratio": weighted_ratio},
             "scenario_scores": scenario_scores,
             "built_at": built_at,
             "_ratio": weighted_ratio,
