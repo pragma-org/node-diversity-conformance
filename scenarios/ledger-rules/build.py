@@ -3,7 +3,22 @@
 import json
 import re
 
+import build_common
 from build_common import ROOT
+
+DATASET_REPOSITORY = "pragma-org/amaru"
+DATASET_PATH = "crates/amaru-ledger/tests/data/transaction/scenarios"
+
+
+def dataset_change(commit=None):
+    """Return the latest Amaru commit that changed the ledger scenario corpus."""
+    query = f"path={DATASET_PATH}&per_page=1" + (f"&sha={commit}" if commit else "")
+    try:
+        commits = json.loads(build_common.download(f"https://api.github.com/repos/{DATASET_REPOSITORY}/commits?{query}"))
+        return commits[0]["sha"]
+    except Exception as error:
+        print(f"warn   ledger-rules: no dataset change at {(commit or 'the default branch')[:7]} ({error})")
+        return None
 
 
 def load_definitions():
@@ -47,12 +62,38 @@ def result_matches(definition, result):
 
 def prepare(_scenario, entries):
     definitions = load_definitions()
-    return {"definitions": definitions}, entries, definitions
+    reports = [entry["report"] for entry in entries]
+    reports += [result["report"] for entry in entries for result in entry.get("eras", {}).values()]
+    commits = {report["dataset_commit"] for report in reports if report and report.get("dataset_commit")}
+    dataset_changes = {
+        "latest": dataset_change(),
+        "by_commit": {commit: dataset_change(commit) for commit in sorted(commits)},
+    }
+    context = {"definitions": definitions, "dataset_changes": dataset_changes}
+    return {"definitions": definitions, "dataset_changes": dataset_changes}, entries, context
 
 
-def score(report, definitions, _node_id=None):
+def is_outdated(report, changes):
+    """Whether a report names an older known version of the scenario corpus."""
+    if not changes or not changes.get("latest"):
+        return False
+    if not report or not report.get("dataset_commit"):
+        return True
+    own = changes["by_commit"].get(report["dataset_commit"])
+    return bool(own) and own != changes["latest"]
+
+
+def outdated(entry, context):
+    """Whether any report published by a node is older than the current corpus."""
+    changes = context.get("dataset_changes") if context else None
+    reports = [entry["report"], *(result["report"] for result in entry.get("eras", {}).values())]
+    return any(is_outdated(report, changes) for report in reports)
+
+
+def score(report, context, _node_id=None):
     if report is None:
         return 0, 0
+    definitions = context.get("definitions", []) if isinstance(context, dict) else context
     definitions_by_id = {definition["id"]: definition for definition in definitions or []}
     results = {
         str(item.get("id", ""))[:5]: item.get("result")

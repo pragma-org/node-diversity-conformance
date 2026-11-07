@@ -41,6 +41,14 @@ Do not copy that metadata into the report.
   renumber ids independently; copy the current fixture filenames and emit the
   id encoded by each filename.
 
+### Report Freshness
+
+- Reports may include `dataset_commit`, the full Amaru commit that last changed
+  `crates/amaru-ledger/tests/data/transaction/scenarios`.
+- The site compares that commit with the latest corpus-changing commit and
+  shows `Latest` or `Outdated` on each implementation card. Reports without the
+  field are treated as outdated, but remain scoreable for compatibility.
+
 ### Fixture Additions
 
 The fixture corpus now contains 368 scenarios. This additive update adds the

@@ -1,5 +1,27 @@
 'use strict';
 
+const DATASET_REPOSITORY = 'https://github.com/pragma-org/amaru';
+
+function commitLink(commit) {
+  const label = `<code>${esc(commit.slice(0, 7))}</code>`;
+  return `<a href="${DATASET_REPOSITORY}/commit/${esc(commit)}" target="_blank" rel="noopener">${label}</a>`;
+}
+
+function freshnessPill(report, changes) {
+  if (!changes?.latest) return '';
+  const pill = (kind, label, reason) =>
+    `<span class="freshness ${kind}" tabindex="0">${label}<span class="freshness-tip" role="tooltip">${reason}</span></span>`;
+  if (!report?.dataset_commit) {
+    return pill('outdated', 'Outdated', 'This report was made without identifying the ledger-rules scenario dataset.');
+  }
+  const own = changes.by_commit[report.dataset_commit];
+  if (!own) return '';
+  if (own === changes.latest) {
+    return pill('latest', 'Latest', `This report was made with the latest ledger-rules dataset: ${commitLink(own)}`);
+  }
+  return pill('outdated', 'Outdated', `This report was made with an older ledger-rules dataset: ${commitLink(own)}`);
+}
+
 function shortId(value) {
   return String(value || '').match(/^\d{5}/)?.[0] || String(value || '');
 }
@@ -85,6 +107,7 @@ function summaryTable({ passed, failed, missing }) {
 
 function renderLedger(data) {
   const loaded = data.nodes.filter((node) => node.report);
+  const changes = data.dataset_changes;
   const results = new Map(loaded.map((node) => [node.id, resultMap(node)]));
   const cases = data.definitions || [];
   const totals = loaded.map((node) => ({
@@ -100,7 +123,7 @@ function renderLedger(data) {
     const width = score === null ? 0 : Math.min(Number(pctValue(score)), 100);
     return `
     <div class="panel card">
-      <div class="card-head"><div class="icon-prefix node-name">${nodeLogo(node)}${esc(node.name)}</div></div>
+      <div class="card-head"><div class="icon-prefix node-name">${nodeLogo(node)}${esc(node.name)}</div>${freshnessPill(node.report, changes)}</div>
       <div class="card-score" style="--node-color:${esc(node.color)}">
         <div class="score-line"><strong>${pctValue(score)}<small>%</small></strong><span class="card-count">${fmt(counts.pass)}/${fmt(total)}</span></div>
         <span class="node-score-bar" aria-hidden="true"><i style="width:${width}%"></i></span>

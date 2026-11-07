@@ -21,6 +21,11 @@
       "type": "string",
       "format": "date-time"
     },
+    "dataset_commit": {
+      "description": "The Amaru commit that last changed the transaction scenario corpus used for this report. Reports without this field are treated as outdated by the website.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
     "implementation": {
       "type": "object",
       "required": [

@@ -33,6 +33,8 @@ To implement this scenario:
 5. Record the observed outcome as `"pass"` or `{ "expected":
    "SomePredicateFailure" }`, mapping your own ledger failures to one of the
    listed predicate in the JSON schema.
+6. Include `dataset_commit`, the full Amaru commit that last changed
+   `crates/amaru-ledger/tests/data/transaction/scenarios`.
 
 ## Evaluation Method
 
@@ -43,3 +45,8 @@ Any missing result from the report is considered failed. Extra or unrecognized
 ids are ignored.
 
 The report must conform to [`schema.json`](./schema.json).
+
+The website compares `dataset_commit` with the latest commit that changed the
+scenario corpus. Reports that omit it, or identify an older corpus, are marked
+**Outdated**. This is a freshness indicator only; the report is still scored
+against the versioned fixtures.
