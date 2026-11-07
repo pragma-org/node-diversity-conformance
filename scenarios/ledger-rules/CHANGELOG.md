@@ -30,6 +30,38 @@ The fixture definitions under
 titles, descriptions, categories, expected outcomes, and the denominator.
 Do not copy that metadata into the report.
 
+### Identifier Reconciliation
+
+- Treat the first five digits of the Amaru fixture filename as the canonical
+  scenario id. The website fixtures for `00284` through `00307` were reconciled
+  with that numbering so report results from Amaru and the Haskell harness now
+  resolve to the same definitions.
+- Several older website fixtures had been assigned later ids and were also
+  duplicated at their canonical ids. Downstream report producers should not
+  renumber ids independently; copy the current fixture filenames and emit the
+  id encoded by each filename.
+
+### Fixture Additions
+
+The fixture corpus now contains 368 scenarios. This additive update adds the
+following previously unpublished fixture ids:
+
+- `00291`, `00293`, and `00299` through `00304`
+- `00308` through `00330`, plus `00332` through `00334`
+- `00342` through `00382`
+
+The additions cover Conway governance-field restrictions in Plutus contexts,
+phase-two witness and datum failures, script-purpose validation, malformed and
+unavailable reference scripts, invalid protocol-parameter updates, Byron
+address restrictions, large-value arithmetic, and collateral/fee boundaries.
+The fixture definitions now also carry the category used to group them in the
+report.
+
+Downstream runners do not need a report-format change: keep `version: "1"`,
+enumerate the expanded fixture directory, and emit the same five-digit id and
+observed result for every fixture. The report schema has only gained the
+predicate names exercised by these fixtures.
+
 ### Migration
 
 1. Enumerate the JSON files in `fixtures/scenarios/`.

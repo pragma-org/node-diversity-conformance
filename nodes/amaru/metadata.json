@@ -9,10 +9,7 @@
     "cbor-decoding": {
       "conway": "https://nightly.amaru.global/preview/cbor-conformance/latest.json"
     },
-    "uplc-turbo": {
-      "github_releases": "pragma-org/amaru",
-      "asset": "amaru-*-uplc-turbo.json"
-    },
+    "uplc-turbo": "https://github.com/pragma-org/node-diversity-conformance/raw/refs/heads/main/scenarios/uplc-turbo/preview/amaru.json.zst",
     "uplc-conformance": {
       "github_releases": "pragma-org/amaru",
       "asset": "amaru-*-uplc-conformance.json"
