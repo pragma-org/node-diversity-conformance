@@ -10,15 +10,33 @@ DATASET_REPOSITORY = "r2rationality/cardano-cbor-dataset"
 DATASET_RAW = f"https://raw.githubusercontent.com/{DATASET_REPOSITORY}"
 
 
-def dataset_change(era, commit=None):
-    """The newest commit that changed the samples of an era, up to a commit (the default branch when None).
-
-    A commit that only changes the README, the code or the reference reports does not make a new dataset. Returns None
-    when GitHub cannot be read."""
-    query = f"path=dataset/{era}&per_page=1" + (f"&sha={commit}" if commit else "")
+def samples_of(era, commit):
+    """The samples of an era at a commit, as the names and hashes of its folders. The coverage summary of the era is made
+    from the samples, so it does not count. Returns None when the era does not exist at this commit."""
+    url = f"https://api.github.com/repos/{DATASET_REPOSITORY}/git/trees/{commit}:dataset/{era}"
     try:
-        commits = json.loads(build_common.download(f"https://api.github.com/repos/{DATASET_REPOSITORY}/commits?{query}"))
-        return commits[0]["sha"]
+        tree = json.loads(build_common.download(url))["tree"]
+    except Exception:
+        return None
+    return {(entry["path"], entry["sha"]) for entry in tree if entry["path"] != "coverage.json"}
+
+
+def dataset_change(era, commit=None):
+    """The commit that made the samples of an era as they are at a commit (the default branch when None).
+
+    This is the oldest commit of the unbroken run of commits, up to this one, that leave the samples as they are. A commit
+    that only changes the README, the code, the coverage or the reference reports does not make a new dataset. Returns
+    None when GitHub cannot be read, or when it does not know the commit."""
+    query = f"path=dataset/{era}&per_page=30" + (f"&sha={commit}" if commit else "")
+    try:
+        commits = [change["sha"] for change in json.loads(build_common.download(f"https://api.github.com/repos/{DATASET_REPOSITORY}/commits?{query}"))]
+        samples = samples_of(era, commits[0])
+        change = commits[0]
+        for older in commits[1:]:
+            if samples_of(era, older) != samples:
+                break
+            change = older
+        return change
     except Exception as error:
         print(f"warn   cbor-decoding: no dataset change for {era} at {(commit or 'the default branch')[:7]} ({error})")
         return None
@@ -62,7 +80,8 @@ def prepare(_scenario, entries):
 
 def is_outdated(report, dataset_changes):
     """Whether a report was made with an older dataset than the latest one of its era. Mirrors the pill of the scenario
-    page: a report that names no dataset is outdated, and nothing is outdated when the dataset changes are unknown."""
+    page: a report is outdated when it names no dataset, or a dataset that GitHub does not know. Nothing is outdated when
+    the latest dataset change is unknown."""
     if not (report and report.get("protocol_version")):
         return False
     try:
@@ -73,8 +92,7 @@ def is_outdated(report, dataset_changes):
         return False
     if not report.get("dataset_commit"):
         return True
-    own = changes["by_commit"].get(report["dataset_commit"])
-    return bool(own) and own != changes["latest"]
+    return changes["by_commit"].get(report["dataset_commit"]) != changes["latest"]
 
 
 def outdated(entry, dataset_changes):

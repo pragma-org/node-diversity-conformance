@@ -98,8 +98,15 @@ function datasetChanges() {
   return state.datasetChanges[state.era] || null;
 }
 
+// Whether the report was made with an older dataset than the latest one of the era, as the pill shows it. A report is
+// not outdated when the build could not find the latest dataset change.
+function isOutdated(report, changes) {
+  if (!changes?.latest) return false;
+  return !report.dataset_commit || changes.by_commit[report.dataset_commit] !== changes.latest;
+}
+
 // A pill that tells whether the report was made with the latest dataset of the era, with a box that gives the reason on
-// hover. A dataset is the samples of an era: a commit that changes only the README or the code is not a new one. Nothing
+// hover. A dataset is the samples of an era: a commit that changes only the README, the code or the coverage is not a new one. Nothing
 // is shown when the build could not find the dataset changes.
 function freshnessPill(report, changes) {
   if (!changes?.latest) return '';
@@ -110,7 +117,9 @@ function freshnessPill(report, changes) {
     return pill('outdated', 'Outdated', 'This report was made with an older version of the dataset. The report does not name it.');
   }
   const own = changes.by_commit[report.dataset_commit];
-  if (!own) return '';
+  if (!own) {
+    return pill('outdated', 'Outdated', `This report names a dataset commit that the dataset repository does not know: ${short(report.dataset_commit)}`);
+  }
   if (own === changes.latest) {
     return pill('latest', 'Latest', `This report was made with the latest CBOR dataset: ${short(own)}`);
   }
@@ -147,11 +156,13 @@ function loaded() {
   return state.nodes.filter((n) => n.report);
 }
 
-// Keep the strongest reports first so all report sections use the same order.
+// Reports made with the latest dataset come first, then the outdated ones. Each group goes from the strongest report to
+// the weakest, as on the front page. All report sections use the same order.
 function ranked() {
+  const changes = datasetChanges();
   return loaded()
-    .map((n) => ({ node: n, s: score(n.report.totals) }))
-    .sort((a, b) => (b.s.ratio ?? -1) - (a.s.ratio ?? -1) || a.node.name.localeCompare(b.node.name));
+    .map((n) => ({ node: n, s: score(n.report.totals), outdated: isOutdated(n.report, changes) }))
+    .sort((a, b) => a.outdated - b.outdated || (b.s.ratio ?? -1) - (a.s.ratio ?? -1) || a.node.name.localeCompare(b.node.name));
 }
 
 function renderWarnings() {

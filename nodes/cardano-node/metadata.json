@@ -7,8 +7,8 @@
   "color": "#5e5086",
   "reports": {
     "cbor-decoding": {
-      "conway": "https://raw.githubusercontent.com/r2rationality/cardano-cbor-dataset/4fd977b201f7426a2983161a702bb127c87973f7/dataset/reports/conway/haskell-latest.json",
-      "dijkstra": "https://raw.githubusercontent.com/r2rationality/cardano-cbor-dataset/4fd977b201f7426a2983161a702bb127c87973f7/dataset/reports/dijkstra/haskell-latest.json"
+      "conway": "https://raw.githubusercontent.com/r2rationality/cardano-cbor-dataset/ed6c49a4e273bb540a26c46d61c011974d0192f6/dataset/reports/conway/haskell-latest.json",
+      "dijkstra": "https://raw.githubusercontent.com/r2rationality/cardano-cbor-dataset/ed6c49a4e273bb540a26c46d61c011974d0192f6/dataset/reports/dijkstra/haskell-latest.json"
     },
     "uplc-turbo": "https://raw.githubusercontent.com/pragma-org/node-diversity-conformance/main/scenarios/uplc-turbo/preview/cardano-node.json.zst",
     "uplc-conformance": "https://raw.githubusercontent.com/pragma-org/node-diversity-conformance/main/scenarios/uplc-conformance/preview/cardano-node.json.zst",
