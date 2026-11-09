@@ -211,6 +211,8 @@ def is_pinned(url):
     parts = urlsplit(url)
     if parts.netloc == "raw.githubusercontent.com":
         return re.match(r"/[^/]+/[^/]+/[0-9a-f]{40}/", parts.path) is not None
+    if parts.netloc == "api.github.com" and re.match(r"/repos/[^/]+/[^/]+/git/trees/[0-9a-f]{40}:", parts.path):
+        return True
     return parts.netloc == "api.github.com" and re.search(r"[?&]sha=[0-9a-f]{40}(&|$)", parts.query) is not None
 
 
