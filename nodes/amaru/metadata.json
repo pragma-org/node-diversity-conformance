@@ -7,10 +7,10 @@
   "color": "#30dfa5",
   "reports": {
     "cbor-decoding": {
-      "conway": "https://nightly.amaru.global/preview/cbor-conformance/latest.json"
+      "conway": "https://nightly.amaru.global/scenarios/cbor-conformance/latest.json"
     },
     "uplc-turbo": "https://github.com/pragma-org/node-diversity-conformance/raw/refs/heads/main/scenarios/uplc-turbo/preview/amaru.json.zst",
-    "uplc-conformance": "https://nightly.amaru.global/preview/uplc-conformance/latest.json",
-    "ledger-rules": "https://nightly.amaru.global/preview/ledger-rules/latest.json"
+    "uplc-conformance": "https://nightly.amaru.global/scenarios/uplc-conformance/latest.json",
+    "ledger-rules": "https://nightly.amaru.global/scenarios/ledger-rules/latest.json"
   }
 }
