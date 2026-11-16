@@ -1,0 +1,16 @@
+{
+  "id": "scarab",
+  "name": "Scarab",
+  "language": "Scala",
+  "repository": "https://github.com/KD5UJC-XYZ/scarab",
+  "color": "#d9a43a",
+  "reports": {
+    "cbor-decoding": {
+      "conway": "https://raw.githubusercontent.com/KD5UJC-XYZ/scarab-conformance/main/latest/cbor-decoding-conway.json.gz",
+      "dijkstra": "https://raw.githubusercontent.com/KD5UJC-XYZ/scarab-conformance/main/latest/cbor-decoding-dijkstra.json.gz"
+    },
+    "ledger-rules": "https://raw.githubusercontent.com/KD5UJC-XYZ/scarab-conformance/main/latest/ledger-rules.json.gz",
+    "uplc-conformance": "https://raw.githubusercontent.com/KD5UJC-XYZ/scarab-conformance/main/latest/uplc-conformance.json.gz",
+    "uplc-turbo": "https://raw.githubusercontent.com/KD5UJC-XYZ/scarab-conformance/main/latest/uplc-turbo.json.gz"
+  }
+}
