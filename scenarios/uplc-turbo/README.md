@@ -44,8 +44,9 @@ three main goals:
    | `< 507`           | 8                |
 
 4. Every evaluation must also count and check for budget, as it would normally
-   happen in a real script validation. Use default budgets of 10B cpu units and
-   10M mem units.
+   happen in a real script validation. Use the mainnet limits for the epoch of
+   each program: 10B cpu units, and 14M mem units up to protocol version 10 or
+   16.5M mem units from protocol version 11 (epoch 644).
 
 ## Evaluation Method
 
@@ -63,12 +64,12 @@ all the points below are verified:
    Such results are excluded from delta-summaries and worst-case rankings.
 
 2. Compute `mem_delta = (mem_bytes - budget_mem) / budget_mem`. The result
-   passes when `mem_delta <= 1.0`. Cocneptually, we treat 1 mem unit as 1 byte
+   passes when `mem_delta <= 1.0`. Conceptually, we treat 1 mem unit as 1 byte
    of allocated memory.
 
-   An absolute measure within 320 KiB (i.e. <2% of the maximum budget) of the
-   budget is treated as within tolerance: it passes, has no delta, and is
-   excluded from memory delta-summaries and worst-case rankings.
+   An absolute measure within 320 KiB (i.e. about 2% of the current 16.5M
+   maximum budget) of the budget is treated as within tolerance: it passes, has
+   no delta, and is excluded from memory delta-summaries and worst-case rankings.
 
 3. A benchmark missing from a node report is failed. A nullable measurement
    is unavailable for that dimension and is not treated as zero.

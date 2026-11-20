@@ -33,6 +33,13 @@ To implement this scenario:
 5. Record the observed outcome as `"pass"` or `{ "expected":
    "SomePredicateFailure" }`, mapping your own ledger failures to one of the
    listed predicate in the JSON schema.
+
+   A report holds exactly one result per id. When the validation raises
+   several failures for one fixture, select one to report:
+
+   - If the expected failure is among the raised failures, report it.
+   - Otherwise, report any of the raised failures, for example the first.
+
 6. Include `dataset_commit`, the full Amaru commit that last changed
    `crates/amaru-ledger/tests/data/transaction/scenarios`.
 
@@ -40,6 +47,8 @@ To implement this scenario:
 
 The files in this repository are treated as ground-truth, and any observed
 outcome is expected to match. A result is marked as failed when it doesn't.
+The website compares the reported result with the expected one, and the two must
+be equal.
 
 Any missing result from the report is considered failed. Extra or unrecognized
 ids are ignored.
